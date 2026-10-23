@@ -10,11 +10,11 @@ when they're on the road ahead.
 Needs a Mac with Xcode 15 or later (iOS 17 SDK or newer).
 
 ```sh
-brew install xcodegen
-cd Jalan
-xcodegen generate        # creates Jalan.xcodeproj from project.yml
-open Jalan.xcodeproj
+git clone https://github.com/s-yugen/jalan.git
+open jalan/Jalan.xcodeproj
 ```
+
+Or double-click `Jalan.xcodeproj` in Finder. No other tools are needed.
 
 1. Select the **Jalan** target → *Signing & Capabilities* → choose your Team (a free Apple ID works
    for running on your own phone). Change the bundle ID from `com.example.jalan` to your own.
@@ -23,7 +23,7 @@ open Jalan.xcodeproj
 3. For Malay voice prompts, install the Malay voice on the phone:
    *Settings → Accessibility → Spoken Content → Voices → Malay*.
 
-Run the core logic's unit tests (no simulator needed):
+Run the core logic's unit tests (no simulator needed), or open `Packages/NavCore` in Xcode and press ⌘U:
 
 ```sh
 cd Packages/NavCore && swift test
