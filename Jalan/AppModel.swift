@@ -40,6 +40,7 @@ final class AppModel {
 
     init() {
         location.onUpdate = { [weak self] in self?.locationDidUpdate($0) }
+        search.geocoders = { [settings] in (settings.makeTypingGeocoders(), settings.makeSubmitGeocoders()) }
         location.start()
     }
 
@@ -62,14 +63,23 @@ final class AppModel {
     func choose(_ completion: MKLocalSearchCompletion) async {
         do {
             guard let item = try await search.resolve(completion) else { return }
-            destination = Destination(name: completion.title, subtitle: completion.subtitle,
-                                      coordinate: Coordinate(item.placemark.coordinate))
-            routes = []
-            phase = .previewing
-            await loadRoutes()
+            await preview(Destination(name: completion.title, subtitle: completion.subtitle,
+                                      coordinate: Coordinate(item.placemark.coordinate)))
         } catch {
             errorMessage = error.localizedDescription
         }
+    }
+
+    /// A result from one of the web services, which already has its coordinate.
+    func choose(_ place: PlaceResult) async {
+        await preview(Destination(name: place.name, subtitle: place.subtitle, coordinate: place.coordinate))
+    }
+
+    private func preview(_ destination: Destination) async {
+        self.destination = destination
+        routes = []
+        phase = .previewing
+        await loadRoutes()
     }
 
     func loadRoutes() async {

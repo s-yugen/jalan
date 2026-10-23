@@ -9,18 +9,48 @@ struct SearchView: View {
 
     var body: some View {
         let lang = model.settings.language
+        let search = model.search
         NavigationStack {
-            List(model.search.results, id: \.self) { completion in
-                Button {
-                    dismiss()
-                    Task { await model.choose(completion) }
-                } label: {
-                    VStack(alignment: .leading, spacing: 2) {
-                        Text(completion.title).foregroundStyle(.primary)
-                        if !completion.subtitle.isEmpty {
-                            Text(completion.subtitle).font(.caption).foregroundStyle(.secondary)
+            List {
+                if !query.isEmpty {
+                    Section {
+                        ForEach(search.appleResults, id: \.self) { completion in
+                            Button {
+                                dismiss()
+                                Task { await model.choose(completion) }
+                            } label: {
+                                PlaceRow(title: completion.title, subtitle: completion.subtitle)
+                            }
+                        }
+                        SearchStatusRow(status: search.appleStatus, isEmpty: search.appleResults.isEmpty,
+                                        source: .apple, lang: lang)
+                    } header: {
+                        SourceHeader(source: .apple, status: search.appleStatus, count: search.appleResults.count)
+                    }
+
+                    ForEach(search.sections) { section in
+                        Section {
+                            ForEach(section.places) { place in
+                                Button {
+                                    dismiss()
+                                    Task { await model.choose(place) }
+                                } label: {
+                                    PlaceRow(title: place.name, subtitle: place.subtitle)
+                                }
+                            }
+                            SearchStatusRow(status: section.status, isEmpty: section.places.isEmpty,
+                                            source: section.source, lang: lang)
+                        } header: {
+                            SourceHeader(source: section.source, status: section.status, count: section.places.count)
                         }
                     }
+
+                    Text(lang.pick(
+                        "Results other than Apple Maps: © OpenStreetMap contributors. Add free API keys in Settings to compare more services.",
+                        "Hasil selain Apple Maps: © penyumbang OpenStreetMap. Masukkan kunci API percuma dalam Tetapan untuk bandingkan lebih banyak perkhidmatan."))
+                        .font(.caption2)
+                        .foregroundStyle(.secondary)
+                        .listRowSeparator(.hidden)
                 }
             }
             .listStyle(.plain)
@@ -34,6 +64,7 @@ struct SearchView: View {
             .searchable(text: $query, placement: .navigationBarDrawer(displayMode: .always),
                         prompt: lang.pick("Place or address", "Tempat atau alamat"))
             .onChange(of: query) { _, newValue in model.search.update(query: newValue) }
+            .onSubmit(of: .search) { model.search.submit() }
             .navigationTitle(lang.pick("Where to?", "Ke mana?"))
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
@@ -41,6 +72,66 @@ struct SearchView: View {
                     Button(lang.pick("Cancel", "Batal")) { dismiss() }
                 }
             }
+        }
+    }
+}
+
+private struct PlaceRow: View {
+    let title: String
+    let subtitle: String
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 2) {
+            Text(title).foregroundStyle(.primary)
+            if !subtitle.isEmpty {
+                Text(subtitle).font(.caption).foregroundStyle(.secondary)
+            }
+        }
+    }
+}
+
+private struct SourceHeader: View {
+    let source: PlaceSource
+    let status: PlaceSearch.Status
+    let count: Int
+
+    var body: some View {
+        HStack {
+            Text(source.title)
+            Spacer()
+            if status == .searching {
+                ProgressView().controlSize(.mini)
+            } else if count > 0 {
+                Text("\(count)").monospacedDigit()
+            }
+        }
+    }
+}
+
+/// What a source has to say when it has no results to list: still searching, failed, or found nothing.
+private struct SearchStatusRow: View {
+    let status: PlaceSearch.Status
+    let isEmpty: Bool
+    let source: PlaceSource
+    let lang: NavLanguage
+
+    var body: some View {
+        switch status {
+        case .searching where isEmpty:
+            Text(lang.pick("Searching…", "Mencari…")).font(.footnote).foregroundStyle(.secondary)
+        case .done where isEmpty:
+            Text(lang.pick("No results", "Tiada hasil")).font(.footnote).foregroundStyle(.secondary)
+        case .failed(let message):
+            Label(message, systemImage: "exclamationmark.triangle")
+                .font(.footnote)
+                .foregroundStyle(.orange)
+        case .waitingForSubmit:
+            Text(lang.pick("Press Search on the keyboard to ask \(source.title).",
+                           "Tekan Cari pada papan kekunci untuk tanya \(source.title)."))
+                .font(.footnote)
+                .foregroundStyle(.secondary)
+        default:
+            EmptyView()
         }
     }
 }
@@ -134,6 +225,26 @@ struct SettingsView: View {
                         "OSRM is free but has no live traffic, so arrival times are optimistic at rush hour. Mapbox uses live traffic and is paid per request beyond its free tier.",
                         "OSRM percuma tetapi tiada data trafik langsung, jadi anggaran masa tiba terlalu awal ketika waktu sibuk. Mapbox guna trafik langsung dan berbayar selepas had percuma."))
                 }
+
+                Section {
+                    Toggle("Photon", isOn: $settings.photonEnabled)
+                    if settings.photonEnabled {
+                        CodeField("Photon server", text: $settings.photonServer)
+                            .keyboardType(.URL)
+                    }
+                    Toggle(lang.pick("Nominatim (on Search)", "Nominatim (bila tekan Cari)"),
+                           isOn: $settings.nominatimEnabled)
+                    CodeField("openrouteservice API key", text: $settings.openrouteserviceKey)
+                    CodeField("Stadia Maps API key", text: $settings.stadiaKey)
+                    CodeField("LocationIQ API key", text: $settings.locationIQKey)
+                    CodeField("MapTiler API key", text: $settings.mapTilerKey)
+                } header: {
+                    Text(lang.pick("Place search", "Carian tempat"))
+                } footer: {
+                    Text(lang.pick(
+                        "Apple Maps is always searched. Photon and Nominatim need no key. openrouteservice, Stadia Maps, LocationIQ and MapTiler are free once you sign up for a key on their websites; the Stadia Maps and MapTiler free plans are for non-commercial use. Each service's results are listed separately.",
+                        "Apple Maps sentiasa dicari. Photon dan Nominatim tidak perlu kunci. openrouteservice, Stadia Maps, LocationIQ dan MapTiler percuma selepas anda daftar untuk kunci di laman web mereka; pelan percuma Stadia Maps dan MapTiler untuk kegunaan bukan komersial. Hasil setiap perkhidmatan disenaraikan berasingan."))
+                }
             }
             .navigationTitle(lang.pick("Settings", "Tetapan"))
             .navigationBarTitleDisplayMode(.inline)
@@ -143,5 +254,23 @@ struct SettingsView: View {
                 }
             }
         }
+    }
+}
+
+/// A text field for URLs and API keys: no autocapitalisation or autocorrection.
+private struct CodeField: View {
+    let title: String
+    @Binding var text: String
+
+    init(_ title: String, text: Binding<String>) {
+        self.title = title
+        _text = text
+    }
+
+    var body: some View {
+        TextField(title, text: $text)
+            .textInputAutocapitalization(.never)
+            .autocorrectionDisabled()
+            .font(.footnote.monospaced())
     }
 }

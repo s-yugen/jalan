@@ -34,6 +34,7 @@ cd Packages/NavCore && swift test
 ```
 Packages/NavCore/          Pure Swift, no UI, unit-tested
   OSRMCompatibleRouter     Fetches and parses routes from OSRM *or* Mapbox (same format)
+  WebGeocoder              Place search on Photon, openrouteservice, Stadia, LocationIQ, MapTiler, Nominatim
   NavigationEngine         Snaps GPS to the route, next maneuver, distance/ETA left, off-route detection
   InstructionBuilder       English and Malay instructions ("Di bulatan, ambil susur keluar ke-2…")
   AnnouncementPlanner      When to speak: early (highways), ~250–800 m out, at the turn
@@ -49,7 +50,7 @@ Data sources in the MVP, chosen so it runs with no API keys:
 | What | Source | Cost |
 | --- | --- | --- |
 | Base map and live traffic layer | Apple MapKit | Free |
-| Place search | Apple MapKit (`MKLocalSearch`) | Free |
+| Place search | Apple MapKit (`MKLocalSearch`), plus the OpenStreetMap services below | Free |
 | Routing | OSRM (OpenStreetMap) public demo server, or Mapbox Directions | Free / paid per request |
 | Hazard reports | Stored on the phone | Free |
 
@@ -64,12 +65,34 @@ They generally require Mapbox results to be shown on a Mapbox map. Then replace 
 `Jalan/Views/RouteMapView.swift` with the Mapbox Maps SDK's SwiftUI `Map` (or MapLibre for
 self-hosted OSM tiles). Nothing else in the app touches the map SDK.
 
+## Place search
+
+Search asks every enabled service at once and lists each one's results in its own section, so you
+can see which service knows a place. Set them up under Settings → Place search.
+
+| Service | Key | Free use | When it's asked |
+| --- | --- | --- | --- |
+| Apple Maps | None | Free | As you type |
+| [Photon](https://photon.komoot.io) (Komoot's public server, or your own) | None | Fair use, no guarantee | As you type, from 3 letters |
+| [openrouteservice](https://openrouteservice.org) (Pelias) | Free sign-up | Daily request quota | As you type, from 3 letters |
+| [Stadia Maps](https://stadiamaps.com) (Pelias) | Free sign-up | Non-commercial only | As you type, from 3 letters |
+| [LocationIQ](https://locationiq.com) | Free sign-up | Daily request quota | As you type, from 3 letters |
+| [MapTiler](https://www.maptiler.com/cloud/geocoding/) | Free sign-up | Non-commercial only | As you type, from 3 letters |
+| [Nominatim](https://nominatim.org) (public server) | None | Light use only | When you press Search: its policy forbids search-as-you-type |
+
+Everything except Apple searches OpenStreetMap data, so the app shows "© OpenStreetMap contributors".
+A missing place can be added to OpenStreetMap by anyone (for example with the StreetComplete or
+Every Door apps) and then shows up in these services after their next data update.
+
 ## Before going to production
 
 - **Run your own OSRM server.** The public demo (`router.project-osrm.org`) forbids production use
   and is rate-limited. Download the Malaysia/Singapore/Brunei extract from Geofabrik,
   build it with the `osrm-backend` Docker image, and enter its URL under Settings → OSRM server.
   A small VPS can handle it.
+- **Run your own Photon server** or move to paid search plans. Komoot's public Photon and the public
+  Nominatim server don't allow heavy use, and the Stadia Maps and MapTiler free plans don't allow
+  commercial use. Photon can sit on the same VPS as OSRM; enter its URL under Settings → Photon server.
 - **Shared hazard reports.** This is what makes it Waze. Add a backend (for example PostgreSQL +
   PostGIS, or Supabase), POST reports from `HazardStore.add/confirm/dismiss`, and fetch reports
   within a few km of the driver every minute (or push them over WebSockets).
