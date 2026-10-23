@@ -1,0 +1,47 @@
+# Generate Jalan.xcodeproj with:  brew install xcodegen && xcodegen generate
+name: Jalan
+options:
+  bundleIdPrefix: com.example
+  deploymentTarget:
+    iOS: "17.0"
+  createIntermediateGroups: true
+
+settings:
+  base:
+    SWIFT_VERSION: "5.0"
+
+packages:
+  NavCore:
+    path: Packages/NavCore
+
+targets:
+  Jalan:
+    type: application
+    platform: iOS
+    sources:
+      - path: Jalan
+    dependencies:
+      - package: NavCore
+    info:
+      path: Jalan/Info.plist
+      properties:
+        CFBundleDisplayName: Jalan
+        CFBundleShortVersionString: "$(MARKETING_VERSION)"
+        CFBundleVersion: "$(CURRENT_PROJECT_VERSION)"
+        UILaunchScreen: {}
+        UIApplicationSceneManifest:
+          UIApplicationSupportsMultipleScenes: false
+        UISupportedInterfaceOrientations:
+          - UIInterfaceOrientationPortrait
+        UIBackgroundModes:
+          - location
+          - audio
+        NSLocationWhenInUseUsageDescription: "Jalan uses your location to show where you are and guide you turn by turn."
+        NSLocationAlwaysAndWhenInUseUsageDescription: "Jalan keeps using your location while you navigate with the screen locked."
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.example.jalan   # change to your own reverse-domain ID
+        MARKETING_VERSION: "0.1.0"
+        CURRENT_PROJECT_VERSION: "1"
+        TARGETED_DEVICE_FAMILY: "1"
+        CODE_SIGN_STYLE: Automatic
