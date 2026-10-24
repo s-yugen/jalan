@@ -46,6 +46,8 @@ final class AppModel {
         location.onUpdate = { [weak self] in self?.locationDidUpdate($0) }
         search.geocoders = { [settings] in (settings.makeTypingGeocoders(), settings.makeSubmitGeocoders()) }
         location.start()
+        // Earlier versions saved hazard reports here. The feature is gone, so delete what they left behind.
+        try? FileManager.default.removeItem(at: URL.applicationSupportDirectory.appending(path: "hazards.json"))
     }
 
     var selectedRoute: Route? {
