@@ -2,8 +2,7 @@
 
 A working MVP: live GPS on a map, place search, route choices with toll badges, turn-by-turn
 guidance with voice in **English or Bahasa Melayu**, and automatic rerouting. Hazard reports are
-left out of the app until there's a backend to share them between drivers (see below); the hazard
-logic in NavCore is kept for that. Your position shows as the blue dot or, if you prefer, a **3D car** that
+left out until there's a backend to share them between drivers (see below). Your position shows as the blue dot or, if you prefer, a **3D car** that
 points the way you're driving (Settings → Map). It also runs on the car's screen with **Apple CarPlay**.
 
 ## Run it
@@ -42,7 +41,6 @@ Packages/NavCore/          Pure Swift, no UI, unit-tested
   NavigationEngine         Snaps GPS to the route, next maneuver, distance/ETA left, off-route detection
   InstructionBuilder       English and Malay instructions ("Di bulatan, ambil susur keluar ke-2…")
   AnnouncementPlanner      When to speak: early (highways), ~250–800 m out, at the turn
-  Hazard                   Report types, expiry times, "is it on my road ahead, in my direction?"
 Jalan/                     SwiftUI app
   AppModel                 State machine: browsing → route preview → navigating, shared by phone and car
   RouteMapView             The phone's map: the only phone file that knows about the map SDK (Apple MapKit)
@@ -124,10 +122,9 @@ Every Door apps) and then shows up in these services after their next data updat
   commercial use. Photon can sit on the same VPS as OSRM; enter its URL under Settings → Photon server.
 - **Shared hazard reports.** This is what makes it Waze. Add a backend (for example PostgreSQL +
   PostGIS, or Supabase) that drivers POST reports to, and fetch reports within a few km of the
-  driver every minute (or push them over WebSockets). NavCore's `HazardLocator` and
-  `AnnouncementPlanner.hazardAlert` already work out which reports are on the road ahead and what
-  to say; the app needs a report button, map markers and an "ahead" banner again (and the CarPlay
-  report grid and alerts).
+  driver every minute (or push them over WebSockets). An earlier on-device version (report types and
+  expiry, "is it on my road ahead, in my direction?", spoken alerts, the phone and CarPlay screens)
+  was removed in pull request #11 and can be brought back from git history as a starting point.
 - **Crowd-sourced traffic.** Have phones send anonymised speed samples while navigating; aggregate
   them per road segment on the server and feed the result into routing weights.
 - **PDPA 2010.** Location history is personal data under Malaysia's Personal Data Protection Act:
