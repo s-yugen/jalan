@@ -33,13 +33,16 @@ final class PlaceSearch: NSObject, MKLocalSearchCompleterDelegate {
     private let completer = MKLocalSearchCompleter()
     @ObservationIgnored private var biasCenter: CLLocation?
     @ObservationIgnored private var query = ""
+    /// The query last sent to Apple and the as-you-type services, so Search doesn't send it twice.
+    @ObservationIgnored private var sentQuery: String?
     @ObservationIgnored private var typingTask: Task<Void, Never>?
     @ObservationIgnored private var submitTask: Task<Void, Never>?
 
-    /// Web services are asked once the query is this long, and after a pause in typing,
-    /// to stay within the free plans' rate limits.
+    /// Nothing is sent until typing pauses this long (or Search is pressed): a request per
+    /// keystroke wastes the free plans' rate limits on half-typed words.
+    static let typingPause = Duration.milliseconds(500)
+    /// Web services need at least this many letters; shorter queries match too much to be useful.
     private static let minimumWebQueryLength = 3
-    private static let typingPause = Duration.milliseconds(400)
 
     override init() {
         super.init()
@@ -56,6 +59,7 @@ final class PlaceSearch: NSObject, MKLocalSearchCompleterDelegate {
         submitTask?.cancel()
 
         guard !query.isEmpty else {
+            sentQuery = nil
             completer.cancel()
             appleResults = []
             appleStatus = .done
@@ -63,31 +67,44 @@ final class PlaceSearch: NSObject, MKLocalSearchCompleterDelegate {
             return
         }
         appleStatus = .searching
-        completer.queryFragment = query
 
         let (typing, onSubmit) = geocoders()
-        let asksTyping = query.count >= Self.minimumWebQueryLength
+        let web = webServices(typing)
         // Keep the previous results on screen until new ones arrive, so the list doesn't flicker.
-        sections = (asksTyping ? typing : []).map { section(for: $0.source, status: .searching) }
+        sections = web.map { section(for: $0.source, status: .searching) }
             + onSubmit.map { section(for: $0.source, status: .waitingForSubmit) }
-        guard asksTyping, !typing.isEmpty else { return }
 
         typingTask = Task { [weak self] in
             try? await Task.sleep(for: Self.typingPause)
-            guard !Task.isCancelled else { return }
-            await self?.ask(typing, query: query)
+            guard !Task.isCancelled, let self else { return }
+            await self.send(query, to: web)
         }
     }
 
-    /// The Search key on the keyboard: also asks the services that don't allow search-as-you-type.
+    /// The Search key on the keyboard: sends the query now instead of waiting for the pause,
+    /// and also asks the services that don't allow search-as-you-type.
     func submit() {
         guard !query.isEmpty else { return }
-        let onSubmit = geocoders().onSubmit
-        guard !onSubmit.isEmpty else { return }
+        let query = query
+        let (typing, onSubmit) = geocoders()
+        // Already sent after a pause: only the Search-only services are left to ask.
+        let web = (sentQuery == query ? [] : webServices(typing)) + onSubmit
+        if sentQuery != query { typingTask?.cancel() }
         for geocoder in onSubmit { setStatus(.searching, for: geocoder.source) }
         submitTask?.cancel()
-        let query = query
-        submitTask = Task { [weak self] in await self?.ask(onSubmit, query: query) }
+        submitTask = Task { [weak self] in await self?.send(query, to: web) }
+    }
+
+    private func webServices(_ typing: [WebGeocoder]) -> [WebGeocoder] {
+        query.count >= Self.minimumWebQueryLength ? typing : []
+    }
+
+    private func send(_ query: String, to web: [WebGeocoder]) async {
+        if sentQuery != query {
+            sentQuery = query
+            completer.queryFragment = query
+        }
+        await ask(web, query: query)
     }
 
     /// Prefer places near the driver; the region is a hint, so far-off matches still appear.
