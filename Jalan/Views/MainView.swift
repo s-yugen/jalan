@@ -14,22 +14,21 @@ struct MainView: View {
 
     var body: some View {
         RouteMapView()
-            // The round buttons float over the map. Sitting inside the bottom inset, they stay above any card.
+            // The bottom panels float over the map and keep clear of its bottom row: MapKit puts Apple's logo
+            // and Legal link (which must stay visible) at the left of that row, and the OSM credit takes the right.
             .overlay(alignment: .bottom) {
-                floatingButtons
-                    .padding(.horizontal, 12)
-                    .padding(.bottom, 8)
+                VStack(spacing: 10) {
+                    bottomPanel
+                    credit
+                }
+                .padding(.horizontal, 12)
+                .padding(.bottom, 8)
             }
-            // Only the full-width panels inset the map's safe area, so MapKit puts Apple's logo and Legal link
-            // (which must stay visible), the scale and the camera just clear of them, and the logo stays in the
-            // bottom-left corner when no card is up.
+            // Insetting the top keeps the map's scale and compass below the search bar or turn banner.
             .safeAreaInset(edge: .top, spacing: 0) {
                 VStack(spacing: 10) { topPanel }
                     .padding(.horizontal, 12)
                     .padding(.top, 8)
-            }
-            .safeAreaInset(edge: .bottom, spacing: 0) {
-                bottomCard
             }
             .sheet(item: $sheet) { sheet in
                 switch sheet {
@@ -78,63 +77,39 @@ struct MainView: View {
     }
 
     @ViewBuilder
-    private var floatingButtons: some View {
+    private var bottomPanel: some View {
         switch model.phase {
         case .browsing:
-            VStack(spacing: 10) {
-                HStack(alignment: .bottom) {
-                    CircleButton(systemImage: "gearshape.fill") { sheet = .settings }
-                    Spacer()
-                    CircleButton(systemImage: "location.fill") { model.recenter() }
-                }
-                // Apple's logo has the left end of this bottom row, so the credit takes the right end. The row
-                // stays when there's no credit to show, so the gear button never covers the logo.
-                credit
-                    .opacity(model.settings.usesMapbox ? 0 : 1)
-                    .lineLimit(1)
-                    .minimumScaleFactor(0.6)
-                    .frame(maxWidth: .infinity, alignment: .trailing)
-                    .padding(.leading, 100)
-                    .allowsHitTesting(false)
+            HStack(alignment: .bottom) {
+                CircleButton(systemImage: "gearshape.fill") { sheet = .settings }
+                Spacer()
+                CircleButton(systemImage: "location.fill") { model.recenter() }
             }
         case .previewing:
-            EmptyView()
+            RoutePreviewPanel()
         case .navigating:
-            HStack {
-                Spacer()
-                if !model.isFollowing {
+            if !model.isFollowing {
+                HStack {
+                    Spacer()
                     CircleButton(systemImage: "location.north.line.fill") { model.recenter() }
                 }
             }
-        }
-    }
-
-    @ViewBuilder
-    private var bottomCard: some View {
-        switch model.phase {
-        case .browsing:
-            EmptyView()
-        case .previewing:
-            VStack(spacing: 10) {
-                RoutePreviewPanel()
-                if !model.settings.usesMapbox {
-                    credit
-                }
-            }
-            .padding(.horizontal, 12)
-            .padding(.bottom, 8)
-        case .navigating:
             NavigationFooter()
-                .padding(.horizontal, 12)
-                .padding(.bottom, 8)
         }
     }
 
-    /// OSM data is ODbL-licensed and must be credited wherever routes from it are shown.
+    /// OSM data is ODbL-licensed and must be credited wherever routes from it are shown. The row stays even
+    /// with no credit to show, so the panels above it never cover Apple's logo.
     private var credit: some View {
         Text("Routing © OpenStreetMap contributors")
             .font(.caption2)
             .foregroundStyle(.secondary)
+            .lineLimit(1)
+            .minimumScaleFactor(0.6)
+            .opacity(model.settings.usesMapbox ? 0 : 1)
+            .frame(maxWidth: .infinity, alignment: .trailing)
+            .padding(.leading, 100) // Apple's logo and Legal link
+            .allowsHitTesting(false)
     }
 }
 
