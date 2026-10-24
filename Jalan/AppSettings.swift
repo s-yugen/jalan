@@ -15,6 +15,36 @@ enum RoutingProviderKind: String, CaseIterable, Identifiable {
     }
 }
 
+/// What marks your position on the map.
+enum PositionMarker: String, CaseIterable, Identifiable {
+    case dot, car
+
+    var id: String { rawValue }
+
+    func title(_ language: NavLanguage) -> String {
+        switch self {
+        case .dot: return language.pick("Blue dot", "Titik biru")
+        case .car: return language.pick("3D car", "Kereta 3D")
+        }
+    }
+}
+
+enum CarColor: String, CaseIterable, Identifiable {
+    case red, white, silver, black, blue
+
+    var id: String { rawValue }
+
+    func title(_ language: NavLanguage) -> String {
+        switch self {
+        case .red: return language.pick("Red", "Merah")
+        case .white: return language.pick("White", "Putih")
+        case .silver: return language.pick("Silver", "Perak")
+        case .black: return language.pick("Black", "Hitam")
+        case .blue: return language.pick("Blue", "Biru")
+        }
+    }
+}
+
 /// User preferences, saved in UserDefaults.
 @Observable
 final class AppSettings {
@@ -60,6 +90,18 @@ final class AppSettings {
     var avoidMotorways: Bool {
         get { access(keyPath: \.avoidMotorways); return read("avoidMotorways", false) }
         set { withMutation(keyPath: \.avoidMotorways) { defaults.set(newValue, forKey: "avoidMotorways") } }
+    }
+
+    // MARK: Map
+
+    var positionMarker: PositionMarker {
+        get { access(keyPath: \.positionMarker); return PositionMarker(rawValue: read("positionMarker", "")) ?? .dot }
+        set { withMutation(keyPath: \.positionMarker) { defaults.set(newValue.rawValue, forKey: "positionMarker") } }
+    }
+
+    var carColor: CarColor {
+        get { access(keyPath: \.carColor); return CarColor(rawValue: read("carColor", "")) ?? .red }
+        set { withMutation(keyPath: \.carColor) { defaults.set(newValue.rawValue, forKey: "carColor") } }
     }
 
     // MARK: Place search

@@ -3,7 +3,8 @@
 A working MVP: live GPS on a map, place search, route choices with toll badges, turn-by-turn
 guidance with voice in **English or Bahasa Melayu**, and automatic rerouting. Hazard reports are
 left out of the app until there's a backend to share them between drivers (see below); the hazard
-logic in NavCore is kept for that.
+logic in NavCore is kept for that. Your position shows as the blue dot or, if you prefer, a **3D car** that
+points the way you're driving (Settings → Map). It also runs on the car's screen with **Apple CarPlay**.
 
 ## Run it
 
@@ -29,6 +30,9 @@ Run the core logic's unit tests (no simulator needed), or open `Packages/NavCore
 cd Packages/NavCore && swift test
 ```
 
+GitHub Actions runs the same tests, and builds the app for the iOS Simulator, on every pull request and every push to `main`
+(`.github/workflows/test.yml`).
+
 ## How it's put together
 
 ```
@@ -40,9 +44,13 @@ Packages/NavCore/          Pure Swift, no UI, unit-tested
   AnnouncementPlanner      When to speak: early (highways), ~250–800 m out, at the turn
   Hazard                   Report types, expiry times, "is it on my road ahead, in my direction?"
 Jalan/                     SwiftUI app
-  AppModel                 State machine: browsing → route preview → navigating
-  RouteMapView             The only file that knows about the map SDK (Apple MapKit)
+  AppModel                 State machine: browsing → route preview → navigating, shared by phone and car
+  RouteMapView             The phone's map: the only phone file that knows about the map SDK (Apple MapKit)
+  CarModelView             The 3D car that can stand in for the blue dot, on the phone and in CarPlay
   LocationService, PlaceSearch, VoiceGuide, AppSettings
+Jalan/CarPlay/             The car's screen, on the same AppModel
+  CarPlayController        Search, route choices, turn-by-turn panel
+  CarPlayMapViewController The car's map (UIKit MKMapView, which CarPlay needs), with its own camera
 ```
 
 Data sources in the MVP, chosen so it runs with no API keys:
@@ -59,10 +67,32 @@ Data sources in the MVP, chosen so it runs with no API keys:
 Directions API uses the same request and response format as OSRM, so one parser handles both.
 Mapbox's `driving-traffic` profile adds live traffic to arrival times, which OSRM doesn't have.
 
-**Base map: one file.** If you go to production with Mapbox Directions, check Mapbox's product terms.
+**Base map: two files.** If you go to production with Mapbox Directions, check Mapbox's product terms.
 They generally require Mapbox results to be shown on a Mapbox map. Then replace the MapKit `Map` in
 `Jalan/Views/RouteMapView.swift` with the Mapbox Maps SDK's SwiftUI `Map` (or MapLibre for
-self-hosted OSM tiles). Nothing else in the app touches the map SDK.
+self-hosted OSM tiles), and the `MKMapView` in `Jalan/CarPlay/CarPlayMapViewController.swift` with
+the same SDK's UIKit `MapView`. Nothing else in the app touches the map SDK.
+
+## CarPlay
+
+The phone and the car's screen share one model, so a destination or trip started on either shows on
+both, and voice prompts play through the car's speakers. On the car's screen:
+
+- **Where to?** opens a search that asks Apple Maps and the OpenStreetMap services set up under
+  Settings → Place search (CarPlay only allows the keyboard while parked).
+- Route choices show time, distance and tolls; **Go** starts guidance in the green turn panel.
+- Map buttons recentre, zoom and pan (arrow buttons, or drag on a touchscreen).
+
+**Try it in the Simulator.** Run the app on an iPhone Simulator, then choose *I/O → External
+Displays → CarPlay* in the Simulator's menu. Simulator builds already carry the CarPlay
+entitlement (`Jalan/Jalan.entitlements`). Open the app on the phone once first to allow location.
+
+**On a real car, or the App Store,** Apple has to approve the app for CarPlay first: request the
+*CarPlay Navigation* entitlement at developer.apple.com/carplay with the paid developer account that
+signs the app. Once it's granted, in *Build Settings → Code Signing Entitlements*, set
+`Jalan/Jalan.entitlements` for all SDKs (it's set for the Simulator only now, because signing for a
+phone with an entitlement your account doesn't have fails, and that would stop the app running on a
+phone at all).
 
 ## Place search
 
@@ -96,13 +126,14 @@ Every Door apps) and then shows up in these services after their next data updat
   PostGIS, or Supabase) that drivers POST reports to, and fetch reports within a few km of the
   driver every minute (or push them over WebSockets). NavCore's `HazardLocator` and
   `AnnouncementPlanner.hazardAlert` already work out which reports are on the road ahead and what
-  to say; the app needs a report button, map markers and an "ahead" banner again.
+  to say; the app needs a report button, map markers and an "ahead" banner again (and the CarPlay
+  report grid and alerts).
 - **Crowd-sourced traffic.** Have phones send anonymised speed samples while navigating; aggregate
   them per road segment on the server and feed the result into routing weights.
 - **PDPA 2010.** Location history is personal data under Malaysia's Personal Data Protection Act:
   get consent, publish a privacy notice, and keep only what you need.
 - **App Store.** Background location needs a clear justification in review. CarPlay navigation
-  needs a separate entitlement from Apple.
+  needs a separate entitlement from Apple (see CarPlay above).
 
 ## Ideas that fit Malaysia
 

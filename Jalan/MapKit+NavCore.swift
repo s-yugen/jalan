@@ -28,6 +28,21 @@ extension MKCoordinateRegion {
     )
 }
 
+/// Heading-up, tilted view that zooms out with speed. Shared by the phone and CarPlay maps.
+struct FollowCamera {
+    static let pitch: Double = 50
+
+    let center: CLLocationCoordinate2D
+    let heading: CLLocationDirection
+    let distance: CLLocationDistance
+
+    init(fix: CLLocation, routeBearing: Double?) {
+        center = fix.coordinate
+        heading = fix.course >= 0 && fix.speed > 2 ? fix.course : (routeBearing ?? 0)
+        distance = 500 + min(max(fix.speed, 0), 30) * 30
+    }
+}
+
 enum ManeuverSymbol {
     static func name(for maneuver: Maneuver) -> String {
         switch maneuver.type {

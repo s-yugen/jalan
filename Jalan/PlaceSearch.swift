@@ -103,6 +103,39 @@ final class PlaceSearch: NSObject, MKLocalSearchCompleterDelegate {
         return response.mapItems.first
     }
 
+    /// One round of search for CarPlay, whose list is filled in one go rather than as each service
+    /// answers: Apple Maps first, then the web services asked while typing, a few places from each.
+    func places(matching query: String, perSource: Int) async -> [PlaceResult] {
+        let request = MKLocalSearch.Request()
+        request.naturalLanguageQuery = query
+        request.resultTypes = [.address, .pointOfInterest]
+        request.region = completer.region
+        let near = biasCenter.map { Coordinate($0.coordinate) }
+        let typing = geocoders().typing
+
+        async let fromWeb = Self.search(typing, query: query, near: near, perSource: perSource)
+        let items = (try? await MKLocalSearch(request: request).start())?.mapItems ?? []
+        let fromApple = items.prefix(perSource).map { item in
+            PlaceResult(id: "apple-\(item.placemark.coordinate.latitude),\(item.placemark.coordinate.longitude)",
+                        name: item.name ?? "", subtitle: item.placemark.title ?? "",
+                        coordinate: Coordinate(item.placemark.coordinate), source: .apple)
+        }
+        return fromApple + (await fromWeb)
+    }
+
+    /// Places from each service, in the order the services are given; a service that fails adds none.
+    private nonisolated static func search(_ geocoders: [WebGeocoder], query: String, near: Coordinate?,
+                                           perSource: Int) async -> [PlaceResult] {
+        await withTaskGroup(of: (Int, [PlaceResult]).self) { group in
+            for (index, geocoder) in geocoders.enumerated() {
+                group.addTask { (index, (try? await geocoder.search(query, near: near)) ?? []) }
+            }
+            var found: [Int: [PlaceResult]] = [:]
+            for await (index, places) in group { found[index] = Array(places.prefix(perSource)) }
+            return geocoders.indices.flatMap { found[$0] ?? [] }
+        }
+    }
+
     /// Asks every service at once and fills in each section as its answer arrives.
     private func ask(_ geocoders: [WebGeocoder], query: String) async {
         let near = biasCenter.map { Coordinate($0.coordinate) }

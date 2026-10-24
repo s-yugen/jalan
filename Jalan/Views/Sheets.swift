@@ -152,6 +152,27 @@ struct SettingsView: View {
                     Toggle(lang.pick("Voice guidance", "Panduan suara"), isOn: $settings.voiceEnabled)
                 }
 
+                Section {
+                    Picker(lang.pick("Your position", "Kedudukan anda"), selection: $settings.positionMarker) {
+                        ForEach(PositionMarker.allCases) { Text($0.title(lang)).tag($0) }
+                    }
+                    if settings.positionMarker == .car {
+                        Picker(lang.pick("Car colour", "Warna kereta"), selection: $settings.carColor) {
+                            ForEach(CarColor.allCases) { Text($0.title(lang)).tag($0) }
+                        }
+                        CarModel(heading: 35, mapHeading: 0, mapPitch: FollowCamera.pitch, color: settings.carColor)
+                            .frame(width: 110, height: 110)
+                            .frame(maxWidth: .infinity)
+                    }
+                } header: {
+                    Text(lang.pick("Map", "Peta"))
+                } footer: {
+                    if settings.positionMarker == .car {
+                        Text(lang.pick("The car turns to face the way you're driving, on the phone and in CarPlay.",
+                                       "Kereta berpusing mengikut arah anda memandu, pada telefon dan dalam CarPlay."))
+                    }
+                }
+
                 Section(lang.pick("Routes", "Laluan")) {
                     Toggle(lang.pick("Avoid tolls", "Elak tol"), isOn: $settings.avoidTolls)
                     Toggle(lang.pick("Avoid highways", "Elak lebuh raya"), isOn: $settings.avoidMotorways)

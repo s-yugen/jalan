@@ -13,22 +13,25 @@ struct MainView: View {
     private var lang: NavLanguage { model.settings.language }
 
     var body: some View {
-        ZStack {
-            RouteMapView()
-            VStack(spacing: 10) {
-                topPanel
-                Spacer(minLength: 0)
-                bottomPanel
+        RouteMapView()
+            // Inset the map's safe area rather than floating the panels over it, so MapKit keeps Apple's logo
+            // and Legal link, the scale and the camera clear of them (the logo must stay visible).
+            .safeAreaInset(edge: .top) {
+                VStack(spacing: 10) { topPanel }
+                    .padding(.horizontal, 12)
+                    .padding(.top, 8)
             }
-            .padding(.horizontal, 12)
-            .padding(.vertical, 8)
-        }
-        .sheet(item: $sheet) { sheet in
-            switch sheet {
-            case .search: SearchView()
-            case .settings: SettingsView()
+            .safeAreaInset(edge: .bottom) {
+                VStack(spacing: 10) { bottomPanel }
+                    .padding(.horizontal, 12)
+                    .padding(.bottom, 8)
             }
-        }
+            .sheet(item: $sheet) { sheet in
+                switch sheet {
+                case .search: SearchView()
+                case .settings: SettingsView()
+                }
+            }
     }
 
     @ViewBuilder
