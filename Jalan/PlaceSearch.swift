@@ -40,7 +40,7 @@ final class PlaceSearch: NSObject, MKLocalSearchCompleterDelegate {
 
     /// Nothing is sent until typing pauses this long (or Search is pressed): a request per
     /// keystroke wastes the free plans' rate limits on half-typed words.
-    static let typingPause = Duration.milliseconds(500)
+    static let typingPause = Duration.seconds(1)
     /// Web services need at least this many letters; shorter queries match too much to be useful.
     private static let minimumWebQueryLength = 3
 
