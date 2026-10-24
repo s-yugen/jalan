@@ -24,6 +24,7 @@
 		9625DB76D205938B74F6DE2D /* CarPlayController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 554CFEEE4C1DD998F86FCB6F /* CarPlayController.swift */; };
 		36D3CB58A2BD89F914412D5D /* CarPlayMapViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3ED1DA5A0D3D2B4421F0FFB5 /* CarPlayMapViewController.swift */; };
 		C83D17F5B26E4A09D5F1B7A3 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 7E2A9C41D05B3F86A1C4E920 /* Assets.xcassets */; };
+		D68275184107BD0BC26F6B0A /* CarModelView.swift in Sources */ = {isa = PBXBuildFile; fileRef = DBA5CB721C7E7501017B4DC2 /* CarModelView.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -38,6 +39,7 @@
 		3923F9FDB7DDBA8F3E5908AC /* VoiceGuide.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VoiceGuide.swift; sourceTree = "<group>"; };
 		9EC40C4994CA8F250394C0D2 /* HazardStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HazardStore.swift; sourceTree = "<group>"; };
 		42DB5D79C93984AC1F154E17 /* MapKit+NavCore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "MapKit+NavCore.swift"; sourceTree = "<group>"; };
+		DBA5CB721C7E7501017B4DC2 /* CarModelView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CarModelView.swift; sourceTree = "<group>"; };
 		7302FB7312D12C851D2C81ED /* MainView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MainView.swift; sourceTree = "<group>"; };
 		84B77558BB3FC08E91AA2FB9 /* RouteMapView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RouteMapView.swift; sourceTree = "<group>"; };
 		092177AC127A29133838190A /* NavigationViews.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NavigationViews.swift; sourceTree = "<group>"; };
@@ -81,6 +83,7 @@
 				3923F9FDB7DDBA8F3E5908AC /* VoiceGuide.swift */,
 				9EC40C4994CA8F250394C0D2 /* HazardStore.swift */,
 				42DB5D79C93984AC1F154E17 /* MapKit+NavCore.swift */,
+				DBA5CB721C7E7501017B4DC2 /* CarModelView.swift */,
 				20231A2CC8BEE1D7E929FDB7 /* Views */,
 				4CED6D2043D46553C3BA2918 /* CarPlay */,
 				7E2A9C41D05B3F86A1C4E920 /* Assets.xcassets */,
@@ -199,6 +202,7 @@
 				CFF77BA0BFC9C9990592D50B /* VoiceGuide.swift in Sources */,
 				9F98B2F705EA2F11D81C091B /* HazardStore.swift in Sources */,
 				EF93B98C07C6DAC3DCDFD689 /* MapKit+NavCore.swift in Sources */,
+				D68275184107BD0BC26F6B0A /* CarModelView.swift in Sources */,
 				4B9CC656272A591DA0BA16C1 /* MainView.swift in Sources */,
 				19FC756EBA2AED9AAB1A97FF /* RouteMapView.swift in Sources */,
 				0BD74343F3A19AA42FB0E737 /* NavigationViews.swift in Sources */,
