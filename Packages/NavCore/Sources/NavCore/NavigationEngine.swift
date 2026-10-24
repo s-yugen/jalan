@@ -29,6 +29,13 @@ public struct NavigationEngine: Sendable {
     /// Consecutive off-route fixes needed before rerouting, to ride out GPS spikes
     /// (common under flyovers and between KL tower blocks).
     public var offRouteConfirmations = 3
+    /// A fix close to the route still counts as off route when the car heads this many degrees
+    /// away from the road's direction: the road under a flyover, a crossing road, the other carriageway.
+    public var offRouteHeadingThreshold: Double = 60
+    /// Below this speed (m/s) the GPS heading is too noisy to compare.
+    public var headingCheckMinimumSpeed: Double = 5
+    /// The heading isn't compared this close (metres along the route) to a maneuver, where the car is mid-turn.
+    public var headingCheckManeuverMargin: Double = 40
     public var arrivalThreshold: Double = 30
 
     private var lastAlong: Double?
@@ -49,7 +56,11 @@ public struct NavigationEngine: Sendable {
         maneuverDistances = distances
     }
 
-    public mutating func update(location: Coordinate, accuracy: Double = 10) -> NavigationProgress {
+    /// - Parameters:
+    ///   - course: GPS heading in degrees from north, or nil when the GPS doesn't know it.
+    ///   - speed: metres per second.
+    public mutating func update(location: Coordinate, accuracy: Double = 10,
+                                course: Double? = nil, speed: Double = 0) -> NavigationProgress {
         let tolerance = max(offRouteThreshold, min(max(accuracy, 0), 100) * 1.5)
         var snap = line.snap(location, near: lastAlong)
             ?? RouteLine.Snap(point: location, segment: 0, distanceAlong: 0, offset: 0)
@@ -60,7 +71,7 @@ public struct NavigationEngine: Sendable {
 
         // Before the driver first reaches the route (e.g. still in a car park), be lenient.
         let limit = lastAlong == nil ? max(tolerance, 200) : tolerance
-        if snap.offset > limit {
+        if snap.offset > limit || headsAway(course: course, speed: speed, at: snap.distanceAlong) {
             offRouteStreak += 1
         } else {
             offRouteStreak = 0
@@ -100,5 +111,20 @@ public struct NavigationEngine: Sendable {
             isOffRoute: isOffRoute,
             hasArrived: arrived
         )
+    }
+
+    /// True when the car is clearly not driving along the route where it was matched to it.
+    private func headsAway(course: Double?, speed: Double, at along: Double) -> Bool {
+        guard let course, course >= 0, speed >= headingCheckMinimumSpeed else { return false }
+        if maneuverDistances.contains(where: { abs($0 - along) < headingCheckManeuverMargin }) { return false }
+        // On a roundabout the road keeps curving, and the GPS heading lags behind it.
+        if let current = maneuverDistances.lastIndex(where: { $0 <= along }),
+           [.roundabout, .rotary, .roundaboutTurn].contains(route.steps[current].maneuver.type) {
+            return false
+        }
+        // The road's direction over a short stretch, so a kink in the line doesn't count.
+        guard let behind = line.coordinate(at: along - 15), let ahead = line.coordinate(at: along + 15),
+              behind != ahead else { return false }
+        return Geo.angleBetween(course, Geo.bearing(from: behind, to: ahead)) > offRouteHeadingThreshold
     }
 }

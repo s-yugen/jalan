@@ -35,6 +35,22 @@ final class RouterTests: XCTestCase {
         XCTAssertEqual(query(url)["access_token"], "pk.test")
     }
 
+    func testOriginBearing() {
+        let osrm = OSRMCompatibleRouter(backend: .osrmDemo)
+        XCTAssertNil(query(osrm.requestURL(from: from, to: to, options: RouteOptions()))["bearings"])
+        let east = osrm.requestURL(from: from, to: to, options: RouteOptions(originBearing: 90.4))
+        XCTAssertEqual(query(east)["bearings"], "90,45;")
+        let north = OSRMCompatibleRouter(backend: .mapbox(accessToken: "pk.test"))
+            .requestURL(from: from, to: to, options: RouteOptions(originBearing: 359.7))
+        XCTAssertEqual(query(north)["bearings"], "0,45;")
+    }
+
+    func testNoRoadMatch() {
+        XCTAssertTrue(RoutingError.noRoute.isNoRoadMatch)
+        XCTAssertTrue(RoutingError.server(code: "NoSegment", message: "Could not find a matching segment").isNoRoadMatch)
+        XCTAssertFalse(RoutingError.http(status: 429).isNoRoadMatch)
+    }
+
     func testParseResponse() throws {
         let routes = try OSRMCompatibleRouter.parse(Data(Self.sampleResponse.utf8))
         XCTAssertEqual(routes.count, 1)

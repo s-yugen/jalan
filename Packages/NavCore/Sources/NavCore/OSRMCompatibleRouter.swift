@@ -7,11 +7,16 @@ public struct RouteOptions: Sendable, Equatable {
     public var avoidTolls: Bool
     public var avoidMotorways: Bool
     public var alternatives: Bool
+    /// The direction the car is moving at the start, degrees from north. The route then starts on
+    /// a road going that way instead of on the other carriageway or with a U-turn.
+    public var originBearing: Double?
 
-    public init(avoidTolls: Bool = false, avoidMotorways: Bool = false, alternatives: Bool = true) {
+    public init(avoidTolls: Bool = false, avoidMotorways: Bool = false, alternatives: Bool = true,
+                originBearing: Double? = nil) {
         self.avoidTolls = avoidTolls
         self.avoidMotorways = avoidMotorways
         self.alternatives = alternatives
+        self.originBearing = originBearing
     }
 }
 
@@ -24,6 +29,15 @@ public enum RoutingError: Error, Equatable, LocalizedError {
     case server(code: String, message: String?)
     case http(status: Int)
     case invalidResponse
+
+    /// No road suited the start or the destination. A looser request, such as one without
+    /// `originBearing`, may still find a route.
+    public var isNoRoadMatch: Bool {
+        switch self {
+        case .noRoute, .server(code: "NoSegment", message: _): return true
+        default: return false
+        }
+    }
 
     public var errorDescription: String? {
         switch self {
@@ -107,6 +121,11 @@ public struct OSRMCompatibleRouter: RoutingProvider {
             query.append(URLQueryItem(name: "access_token", value: token))
         }
 
+        if let bearing = options.originBearing {
+            // One "bearing,range" per coordinate; the destination's is left empty. Same format on both.
+            let degrees = Int(bearing.rounded()) % 360
+            query.append(URLQueryItem(name: "bearings", value: "\((degrees + 360) % 360),45;"))
+        }
         if !exclude.isEmpty {
             query.append(URLQueryItem(name: "exclude", value: exclude.joined(separator: ",")))
         }

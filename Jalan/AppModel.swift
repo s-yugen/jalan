@@ -171,7 +171,8 @@ final class AppModel {
         if phase != .navigating { search.bias(to: fix) }
         guard phase == .navigating, var engine, var planner else { return }
 
-        let progress = engine.update(location: Coordinate(fix.coordinate), accuracy: fix.horizontalAccuracy)
+        let progress = engine.update(location: Coordinate(fix.coordinate), accuracy: fix.horizontalAccuracy,
+                                     course: fix.course >= 0 ? fix.course : nil, speed: max(fix.speed, 0))
         self.engine = engine
         self.progress = progress
 
@@ -207,11 +208,20 @@ final class AppModel {
         defer { isRerouting = false }
         if let text = planner?.recalculating() { speak(text) }
 
+        let router = settings.makeRouter()
+        let origin = Coordinate(fix.coordinate)
         var options = settings.routeOptions
         options.alternatives = false
+        if fix.course >= 0, fix.speed > 2 { options.originBearing = fix.course }
         do {
-            let found = try await settings.makeRouter()
-                .routes(from: Coordinate(fix.coordinate), to: destination.coordinate, options: options)
+            let found: [Route]
+            do {
+                found = try await router.routes(from: origin, to: destination.coordinate, options: options)
+            } catch let error as RoutingError where error.isNoRoadMatch && options.originBearing != nil {
+                // No road nearby goes the way the GPS says the car is heading: retry without the hint.
+                options.originBearing = nil
+                found = try await router.routes(from: origin, to: destination.coordinate, options: options)
+            }
             guard phase == .navigating, let route = found.first else { return }
             routes = [route]
             selectedRouteID = route.id
