@@ -23,6 +23,7 @@
 		D3C8D4B52C225C41CC126D62 /* CarPlaySceneDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 38AE273FE8A0DBAB511CA16B /* CarPlaySceneDelegate.swift */; };
 		9625DB76D205938B74F6DE2D /* CarPlayController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 554CFEEE4C1DD998F86FCB6F /* CarPlayController.swift */; };
 		36D3CB58A2BD89F914412D5D /* CarPlayMapViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3ED1DA5A0D3D2B4421F0FFB5 /* CarPlayMapViewController.swift */; };
+		C83D17F5B26E4A09D5F1B7A3 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 7E2A9C41D05B3F86A1C4E920 /* Assets.xcassets */; };
 		D68275184107BD0BC26F6B0A /* CarModelView.swift in Sources */ = {isa = PBXBuildFile; fileRef = DBA5CB721C7E7501017B4DC2 /* CarModelView.swift */; };
 /* End PBXBuildFile section */
 
@@ -47,6 +48,7 @@
 		554CFEEE4C1DD998F86FCB6F /* CarPlayController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CarPlayController.swift; sourceTree = "<group>"; };
 		3ED1DA5A0D3D2B4421F0FFB5 /* CarPlayMapViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CarPlayMapViewController.swift; sourceTree = "<group>"; };
 		13DE44F3C6570D6C6D8BB8F5 /* Jalan.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = Jalan.entitlements; sourceTree = "<group>"; };
+		7E2A9C41D05B3F86A1C4E920 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -84,6 +86,7 @@
 				DBA5CB721C7E7501017B4DC2 /* CarModelView.swift */,
 				20231A2CC8BEE1D7E929FDB7 /* Views */,
 				4CED6D2043D46553C3BA2918 /* CarPlay */,
+				7E2A9C41D05B3F86A1C4E920 /* Assets.xcassets */,
 				6A34AC6A1C71D5BC0B2390DD /* Info.plist */,
 				13DE44F3C6570D6C6D8BB8F5 /* Jalan.entitlements */,
 			);
@@ -180,6 +183,7 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				C83D17F5B26E4A09D5F1B7A3 /* Assets.xcassets in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -274,6 +278,7 @@
 		51B97D8C8C3C994E5983BF01 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				"CODE_SIGN_ENTITLEMENTS[sdk=iphonesimulator*]" = Jalan/Jalan.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
@@ -298,6 +303,7 @@
 		5DEFA0508E983E661DF0FDD4 /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				"CODE_SIGN_ENTITLEMENTS[sdk=iphonesimulator*]" = Jalan/Jalan.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
