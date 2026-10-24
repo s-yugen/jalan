@@ -113,7 +113,7 @@ final class CarPlayMapViewController: UIViewController, MKMapViewDelegate {
 
     // MARK: - Following the model
 
-    /// Routes, destination and hazard markers. Redrawn only when they change, not on every GPS fix.
+    /// Routes and the destination marker. Redrawn only when they change, not on every GPS fix.
     private func observeOverlays() {
         guard !isStopped else { return }
         withObservationTracking {
@@ -142,8 +142,6 @@ final class CarPlayMapViewController: UIViewController, MKMapViewDelegate {
             marker.title = destination.name
             mapView.addAnnotation(marker)
         }
-        let language = model.settings.language
-        mapView.addAnnotations(model.hazards.active().map { HazardAnnotation(report: $0, language: language) })
 
         // Fit a new set of route choices on screen, once; after that the driver may pan.
         let routeIDs = model.routes.map(\.id)
@@ -261,17 +259,9 @@ final class CarPlayMapViewController: UIViewController, MKMapViewDelegate {
             return view
         }
         let view = MKMarkerAnnotationView(annotation: annotation, reuseIdentifier: nil)
-        if let hazard = annotation as? HazardAnnotation {
-            view.markerTintColor = UIColor(hazard.report.type.color)
-            view.glyphImage = UIImage(systemName: hazard.report.type.symbol)
-            view.titleVisibility = .hidden
-            // The destination marker wins when they overlap.
-            view.displayPriority = .defaultLow
-        } else {
-            view.markerTintColor = .systemRed
-            view.glyphImage = UIImage(systemName: "flag.checkered")
-            view.displayPriority = .required
-        }
+        view.markerTintColor = .systemRed
+        view.glyphImage = UIImage(systemName: "flag.checkered")
+        view.displayPriority = .required
         return view
     }
 }
@@ -289,17 +279,5 @@ private final class CarAnnotationView: MKAnnotationView {
 
     required init?(coder: NSCoder) {
         fatalError("init(coder:) is not supported")
-    }
-}
-
-private final class HazardAnnotation: NSObject, MKAnnotation {
-    let report: HazardReport
-    let coordinate: CLLocationCoordinate2D
-    let title: String?
-
-    init(report: HazardReport, language: NavLanguage) {
-        self.report = report
-        coordinate = CLLocationCoordinate2D(report.coordinate)
-        title = report.type.title(language)
     }
 }

@@ -72,32 +72,4 @@ final class NavigationTests: XCTestCase {
         XCTAssertEqual(announce(at: 101.7098), "Turn left onto Jalan Tun Razak")  // ~22 m
         XCTAssertNil(announce(at: 101.7099))
     }
-
-    func testHazardsAheadRespectDirection() {
-        let line = RouteLine(TestRoute.make().coordinates)
-        let eastbound = HazardReport(type: .accident, coordinate: point(3.1501, 101.706), heading: 90)
-        let westbound = HazardReport(type: .police, coordinate: point(3.1501, 101.707), heading: 270)
-        let behind = HazardReport(type: .pothole, coordinate: point(3.15, 101.7005))
-        let offRoute = HazardReport(type: .flood, coordinate: point(3.155, 101.705))
-
-        let ahead = HazardLocator.hazardsAhead(of: 100, on: line, among: [eastbound, westbound, behind, offRoute])
-        XCTAssertEqual(ahead.map(\.report.id), [eastbound.id])
-        XCTAssertEqual(ahead[0].distanceAhead, 566, accuracy: 3)
-
-        var planner = AnnouncementPlanner(language: .malay)
-        XCTAssertEqual(planner.hazardAlert(ahead[0]), "Kemalangan dilaporkan di hadapan, dalam 550 meter")
-        XCTAssertNil(planner.hazardAlert(ahead[0]))
-    }
-
-    func testHazardExpiryAndDismissal() {
-        let start = Date(timeIntervalSince1970: 0)
-        var report = HazardReport(type: .jam, coordinate: point(3.15, 101.70), reportedAt: start)
-        XCTAssertTrue(report.isActive(at: start.addingTimeInterval(20 * 60)))
-        XCTAssertFalse(report.isActive(at: start.addingTimeInterval(31 * 60)))
-        report.confirm(at: start.addingTimeInterval(25 * 60))
-        XCTAssertTrue(report.isActive(at: start.addingTimeInterval(31 * 60)))
-        report.dismiss()
-        report.dismiss()
-        XCTAssertFalse(report.isActive(at: start.addingTimeInterval(26 * 60)))
-    }
 }

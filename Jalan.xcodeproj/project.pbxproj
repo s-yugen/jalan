@@ -13,7 +13,6 @@
 		39950C8C22148F945B2E19D8 /* LocationService.swift in Sources */ = {isa = PBXBuildFile; fileRef = F9EAC7C51B1AF73AF7800EA3 /* LocationService.swift */; };
 		1D9718CD1D4163483A1E1164 /* PlaceSearch.swift in Sources */ = {isa = PBXBuildFile; fileRef = 770BB416D09314A5B3B73EDE /* PlaceSearch.swift */; };
 		CFF77BA0BFC9C9990592D50B /* VoiceGuide.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3923F9FDB7DDBA8F3E5908AC /* VoiceGuide.swift */; };
-		9F98B2F705EA2F11D81C091B /* HazardStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9EC40C4994CA8F250394C0D2 /* HazardStore.swift */; };
 		EF93B98C07C6DAC3DCDFD689 /* MapKit+NavCore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 42DB5D79C93984AC1F154E17 /* MapKit+NavCore.swift */; };
 		4B9CC656272A591DA0BA16C1 /* MainView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7302FB7312D12C851D2C81ED /* MainView.swift */; };
 		19FC756EBA2AED9AAB1A97FF /* RouteMapView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 84B77558BB3FC08E91AA2FB9 /* RouteMapView.swift */; };
@@ -37,7 +36,6 @@
 		F9EAC7C51B1AF73AF7800EA3 /* LocationService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LocationService.swift; sourceTree = "<group>"; };
 		770BB416D09314A5B3B73EDE /* PlaceSearch.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PlaceSearch.swift; sourceTree = "<group>"; };
 		3923F9FDB7DDBA8F3E5908AC /* VoiceGuide.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VoiceGuide.swift; sourceTree = "<group>"; };
-		9EC40C4994CA8F250394C0D2 /* HazardStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HazardStore.swift; sourceTree = "<group>"; };
 		42DB5D79C93984AC1F154E17 /* MapKit+NavCore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "MapKit+NavCore.swift"; sourceTree = "<group>"; };
 		DBA5CB721C7E7501017B4DC2 /* CarModelView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CarModelView.swift; sourceTree = "<group>"; };
 		7302FB7312D12C851D2C81ED /* MainView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MainView.swift; sourceTree = "<group>"; };
@@ -81,7 +79,6 @@
 				F9EAC7C51B1AF73AF7800EA3 /* LocationService.swift */,
 				770BB416D09314A5B3B73EDE /* PlaceSearch.swift */,
 				3923F9FDB7DDBA8F3E5908AC /* VoiceGuide.swift */,
-				9EC40C4994CA8F250394C0D2 /* HazardStore.swift */,
 				42DB5D79C93984AC1F154E17 /* MapKit+NavCore.swift */,
 				DBA5CB721C7E7501017B4DC2 /* CarModelView.swift */,
 				20231A2CC8BEE1D7E929FDB7 /* Views */,
@@ -200,7 +197,6 @@
 				39950C8C22148F945B2E19D8 /* LocationService.swift in Sources */,
 				1D9718CD1D4163483A1E1164 /* PlaceSearch.swift in Sources */,
 				CFF77BA0BFC9C9990592D50B /* VoiceGuide.swift in Sources */,
-				9F98B2F705EA2F11D81C091B /* HazardStore.swift in Sources */,
 				EF93B98C07C6DAC3DCDFD689 /* MapKit+NavCore.swift in Sources */,
 				D68275184107BD0BC26F6B0A /* CarModelView.swift in Sources */,
 				4B9CC656272A591DA0BA16C1 /* MainView.swift in Sources */,

@@ -12,7 +12,6 @@ public struct AnnouncementPlanner: Sendable {
     }
 
     private var spoken: Set<Key> = []
-    private var alertedHazards: Set<UUID> = []
 
     public init(language: NavLanguage) {
         builder = InstructionBuilder(language: language)
@@ -49,13 +48,6 @@ public struct AnnouncementPlanner: Sendable {
             return say(index, .early, builder.spoken(step, in: distance))
         }
         return nil
-    }
-
-    public mutating func hazardAlert(_ hazard: HazardAhead) -> String? {
-        guard hazard.distanceAhead <= 1_000, alertedHazards.insert(hazard.report.id).inserted else { return nil }
-        let name = hazard.report.type.title(builder.language)
-        let d = DistanceFormatter.spoken(hazard.distanceAhead, language: builder.language)
-        return builder.language.pick("\(name) reported ahead, in \(d)", "\(name) dilaporkan di hadapan, dalam \(d)")
     }
 
     public func recalculating() -> String {

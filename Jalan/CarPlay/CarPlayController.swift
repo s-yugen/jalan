@@ -4,8 +4,8 @@ import MapKit
 import Observation
 import NavCore
 
-/// The car's screen: the map and its buttons, search, route choices, turn-by-turn guidance and
-/// hazard alerts. It runs on the same `AppModel` as the phone, so a destination chosen or a trip
+/// The car's screen: the map and its buttons, search, route choices and turn-by-turn guidance.
+/// It runs on the same `AppModel` as the phone, so a destination chosen or a trip
 /// started on either screen shows on both.
 @MainActor
 final class CarPlayController: NSObject, CPMapTemplateDelegate, CPSearchTemplateDelegate {
@@ -26,11 +26,6 @@ final class CarPlayController: NSObject, CPMapTemplateDelegate, CPSearchTemplate
     private var session: CPNavigationSession?
     private var shownManeuvers: ManeuverKey?
     private var pausedFor: PauseReason?
-    private var shownHazard: HazardAhead?
-    /// Hazards already warned about, or asked about, on this trip. GPS jitter can drop a hazard
-    /// from "ahead" for a moment, and it shouldn't pop up again when it comes back.
-    private var warnedHazards: Set<HazardReport.ID> = []
-    private var askedHazards: Set<HazardReport.ID> = []
     private var shownError: String?
 
     private var searchTask: Task<Void, Never>?
@@ -92,7 +87,6 @@ final class CarPlayController: NSObject, CPMapTemplateDelegate, CPSearchTemplate
         case .navigating:
             updateGuidance()
         }
-        updateHazardAlert()
         updateErrorAlert()
     }
 
@@ -129,7 +123,6 @@ final class CarPlayController: NSObject, CPMapTemplateDelegate, CPSearchTemplate
         guard key != shownBarButtons else { return }
         shownBarButtons = key
 
-        let report = barButton(lang.pick("Report", "Lapor")) { [weak self] in self?.showReport() }
         if isPanning {
             mapTemplate.leadingNavigationBarButtons = []
             mapTemplate.trailingNavigationBarButtons = [barButton(lang.pick("Done", "Selesai")) { [weak self] in
@@ -142,14 +135,14 @@ final class CarPlayController: NSObject, CPMapTemplateDelegate, CPSearchTemplate
             mapTemplate.leadingNavigationBarButtons = [barButton(lang.pick("Where to?", "Ke mana?")) { [weak self] in
                 self?.showSearch()
             }]
-            mapTemplate.trailingNavigationBarButtons = [report]
+            mapTemplate.trailingNavigationBarButtons = []
         case .previewing:
             mapTemplate.leadingNavigationBarButtons = [barButton(lang.pick("Cancel", "Batal")) { [weak self] in
                 self?.model.cancelPreview()
             }]
             mapTemplate.trailingNavigationBarButtons = []
         case .navigating:
-            mapTemplate.leadingNavigationBarButtons = [report]
+            mapTemplate.leadingNavigationBarButtons = []
             mapTemplate.trailingNavigationBarButtons = [barButton(lang.pick("End", "Tamat")) { [weak self] in
                 self?.model.stopNavigation()
             }]
@@ -205,66 +198,7 @@ final class CarPlayController: NSObject, CPMapTemplateDelegate, CPSearchTemplate
         Task { await model.choose(place) }
     }
 
-    // MARK: - Hazard reports
-
-    private func showReport() {
-        let lang = language
-        let buttons = HazardType.allCases.map { type in
-            CPGridButton(titleVariants: [type.title(lang)], image: hazardImage(type)) { [weak self] _ in
-                self?.model.report(type)
-                self?.interfaceController.popTemplate(animated: true, completion: nil)
-            }
-        }
-        // Eight hazard types: exactly what fits on a CarPlay grid.
-        let grid = CPGridTemplate(title: lang.pick("Report here", "Laporkan di sini"), gridButtons: buttons)
-        interfaceController.pushTemplate(grid, animated: true, completion: nil)
-    }
-
-    private func hazardImage(_ type: HazardType) -> UIImage {
-        let image = UIImage(systemName: type.symbol, withConfiguration: UIImage.SymbolConfiguration(pointSize: 32))
-        return image?.withTintColor(UIColor(type.color), renderingMode: .alwaysOriginal) ?? UIImage()
-    }
-
-    /// Warns of a hazard on the road ahead; once the driver has passed it, asks whether it's still there.
-    private func updateHazardAlert() {
-        let ahead = model.phase == .navigating ? model.hazardAhead : nil
-        let previous = shownHazard
-        shownHazard = ahead
-        let lang = language
-
-        if let ahead, ahead.report.id != previous?.report.id, !warnedHazards.contains(ahead.report.id) {
-            warnedHazards.insert(ahead.report.id)
-            let distance = DistanceFormatter.string(ahead.distanceAhead)
-            let ok = CPAlertAction(title: "OK", style: .cancel) { _ in }
-            present(CPNavigationAlert(titleVariants: [ahead.report.type.title(lang)],
-                                      subtitleVariants: [lang.pick("\(distance) ahead", "\(distance) di hadapan")],
-                                      image: hazardImage(ahead.report.type),
-                                      primaryAction: ok, secondaryAction: nil, duration: 8))
-        } else if let previous, ahead?.report.id != previous.report.id,
-                  previous.distanceAhead < 200, model.phase == .navigating,
-                  !askedHazards.contains(previous.report.id) {
-            let passed = previous.report
-            let id = passed.id
-            askedHazards.insert(id)
-            let yes = CPAlertAction(title: lang.pick("Still there", "Masih ada"), style: .default) { [weak self] _ in
-                self?.model.hazards.confirm(id)
-            }
-            let no = CPAlertAction(title: lang.pick("Not there", "Sudah tiada"), style: .cancel) { [weak self] _ in
-                self?.model.hazards.dismiss(id)
-            }
-            present(CPNavigationAlert(titleVariants: [passed.type.title(lang)],
-                                      subtitleVariants: [lang.pick("Is it still there?", "Masih ada lagi?")],
-                                      image: hazardImage(passed.type),
-                                      primaryAction: yes, secondaryAction: no, duration: 10))
-        }
-    }
-
-    private func present(_ alert: CPNavigationAlert) {
-        if mapTemplate.currentNavigationAlert != nil {
-            mapTemplate.dismissNavigationAlert(animated: false) { _ in }
-        }
-        mapTemplate.present(navigationAlert: alert, animated: true)
-    }
+    // MARK: - Errors
 
     private func updateErrorAlert() {
         let message = model.errorMessage
@@ -352,8 +286,6 @@ final class CarPlayController: NSObject, CPMapTemplateDelegate, CPSearchTemplate
             session = mapTemplate.startNavigationSession(for: trip)
             shownManeuvers = nil
             pausedFor = nil
-            warnedHazards = []
-            askedHazards = []
         }
         guard let session, let trip else { return }
 

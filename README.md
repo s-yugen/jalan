@@ -1,9 +1,8 @@
 # Jalan: a Waze-style navigation app for Malaysia (iOS, Swift)
 
 A working MVP: live GPS on a map, place search, route choices with toll badges, turn-by-turn
-guidance with voice in **English or Bahasa Melayu**, automatic rerouting, and hazard reports
-(accident, police, roadblock/SJR, flood, pothole, jam, stalled vehicle, road works) announced
-when they're on the road ahead. Your position shows as the blue dot or, if you prefer, a **3D car** that
+guidance with voice in **English or Bahasa Melayu**, and automatic rerouting. Hazard reports are
+left out until there's a backend to share them between drivers (see below). Your position shows as the blue dot or, if you prefer, a **3D car** that
 points the way you're driving (Settings → Map). It also runs on the car's screen with **Apple CarPlay**.
 
 ## Run it
@@ -42,14 +41,13 @@ Packages/NavCore/          Pure Swift, no UI, unit-tested
   NavigationEngine         Snaps GPS to the route, next maneuver, distance/ETA left, off-route detection
   InstructionBuilder       English and Malay instructions ("Di bulatan, ambil susur keluar ke-2…")
   AnnouncementPlanner      When to speak: early (highways), ~250–800 m out, at the turn
-  Hazard                   Report types, expiry times, "is it on my road ahead, in my direction?"
 Jalan/                     SwiftUI app
   AppModel                 State machine: browsing → route preview → navigating, shared by phone and car
   RouteMapView             The phone's map: the only phone file that knows about the map SDK (Apple MapKit)
   CarModelView             The 3D car that can stand in for the blue dot, on the phone and in CarPlay
-  LocationService, PlaceSearch, VoiceGuide, HazardStore, AppSettings
+  LocationService, PlaceSearch, VoiceGuide, AppSettings
 Jalan/CarPlay/             The car's screen, on the same AppModel
-  CarPlayController        Search, route choices, turn-by-turn panel, hazard alerts and reports
+  CarPlayController        Search, route choices, turn-by-turn panel
   CarPlayMapViewController The car's map (UIKit MKMapView, which CarPlay needs), with its own camera
 ```
 
@@ -60,7 +58,6 @@ Data sources in the MVP, chosen so it runs with no API keys:
 | Base map and live traffic layer | Apple MapKit | Free |
 | Place search | Apple MapKit (`MKLocalSearch`), plus the OpenStreetMap services below | Free |
 | Routing | OSRM (OpenStreetMap) public demo server, or Mapbox Directions | Free / paid per request |
-| Hazard reports | Stored on the phone | Free |
 
 ## Switching between OpenStreetMap and Mapbox
 
@@ -82,8 +79,6 @@ both, and voice prompts play through the car's speakers. On the car's screen:
 - **Where to?** opens a search that asks Apple Maps and the OpenStreetMap services set up under
   Settings → Place search (CarPlay only allows the keyboard while parked).
 - Route choices show time, distance and tolls; **Go** starts guidance in the green turn panel.
-- **Report** opens the eight hazard types as one grid. A hazard on the road ahead pops up an alert,
-  and once you've passed it Jalan asks whether it's still there.
 - Map buttons recentre, zoom and pan (arrow buttons, or drag on a touchscreen).
 
 **Try it in the Simulator.** Run the app on an iPhone Simulator, then choose *I/O → External
@@ -126,8 +121,10 @@ Every Door apps) and then shows up in these services after their next data updat
   Nominatim server don't allow heavy use, and the Stadia Maps and MapTiler free plans don't allow
   commercial use. Photon can sit on the same VPS as OSRM; enter its URL under Settings → Photon server.
 - **Shared hazard reports.** This is what makes it Waze. Add a backend (for example PostgreSQL +
-  PostGIS, or Supabase), POST reports from `HazardStore.add/confirm/dismiss`, and fetch reports
-  within a few km of the driver every minute (or push them over WebSockets).
+  PostGIS, or Supabase) that drivers POST reports to, and fetch reports within a few km of the
+  driver every minute (or push them over WebSockets). An earlier on-device version (report types and
+  expiry, "is it on my road ahead, in my direction?", spoken alerts, the phone and CarPlay screens)
+  was removed in pull request #11 and can be brought back from git history as a starting point.
 - **Crowd-sourced traffic.** Have phones send anonymised speed samples while navigating; aggregate
   them per road segment on the server and feed the result into routing weights.
 - **PDPA 2010.** Location history is personal data under Malaysia's Personal Data Protection Act:

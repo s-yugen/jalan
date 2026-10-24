@@ -4,17 +4,16 @@ import NavCore
 struct MainView: View {
     @Environment(AppModel.self) private var model
     @State private var sheet: Sheet?
-    @State private var selectedHazard: HazardReport?
 
     enum Sheet: String, Identifiable {
-        case search, report, settings
+        case search, settings
         var id: String { rawValue }
     }
 
     private var lang: NavLanguage { model.settings.language }
 
     var body: some View {
-        RouteMapView(selectedHazard: $selectedHazard)
+        RouteMapView()
             // The round buttons float over the map. Sitting inside the bottom inset, they stay above any card.
             .overlay(alignment: .bottom) {
                 floatingButtons
@@ -35,20 +34,8 @@ struct MainView: View {
             .sheet(item: $sheet) { sheet in
                 switch sheet {
                 case .search: SearchView()
-                case .report: ReportView().presentationDetents([.medium])
                 case .settings: SettingsView()
                 }
-            }
-            .confirmationDialog(
-                selectedHazard.map { $0.type.title(lang) } ?? "",
-                isPresented: Binding(get: { selectedHazard != nil }, set: { if !$0 { selectedHazard = nil } }),
-                titleVisibility: .visible,
-                presenting: selectedHazard
-            ) { report in
-                Button(lang.pick("Still there", "Masih ada")) { model.hazards.confirm(report.id) }
-                Button(lang.pick("Not there anymore", "Sudah tiada"), role: .destructive) { model.hazards.dismiss(report.id) }
-            } message: { report in
-                Text(lang.pick("Reported ", "Dilaporkan ") + report.reportedAt.formatted(.relative(presentation: .named)))
             }
     }
 
@@ -79,16 +66,6 @@ struct MainView: View {
                     .padding(.horizontal, 14).padding(.vertical, 8)
                     .background(.regularMaterial, in: Capsule())
             }
-            if let hazard = model.hazardAhead {
-                HStack {
-                    HazardIcon(type: hazard.report.type, size: 30)
-                    Text(hazard.report.type.title(lang)).bold()
-                    Spacer()
-                    Text(DistanceFormatter.string(hazard.distanceAhead)).monospacedDigit()
-                }
-                .padding(10)
-                .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 14))
-            }
         }
 
         if model.location.isDenied {
@@ -108,10 +85,7 @@ struct MainView: View {
                 HStack(alignment: .bottom) {
                     CircleButton(systemImage: "gearshape.fill") { sheet = .settings }
                     Spacer()
-                    VStack(spacing: 12) {
-                        CircleButton(systemImage: "location.fill") { model.recenter() }
-                        reportButton
-                    }
+                    CircleButton(systemImage: "location.fill") { model.recenter() }
                 }
                 // Apple's logo has the left end of this bottom row, so the credit takes the right end. The row
                 // stays when there's no credit to show, so the gear button never covers the logo.
@@ -128,11 +102,8 @@ struct MainView: View {
         case .navigating:
             HStack {
                 Spacer()
-                VStack(spacing: 12) {
-                    if !model.isFollowing {
-                        CircleButton(systemImage: "location.north.line.fill") { model.recenter() }
-                    }
-                    reportButton
+                if !model.isFollowing {
+                    CircleButton(systemImage: "location.north.line.fill") { model.recenter() }
                 }
             }
         }
@@ -157,13 +128,6 @@ struct MainView: View {
                 .padding(.horizontal, 12)
                 .padding(.bottom, 8)
         }
-    }
-
-    private var reportButton: some View {
-        CircleButton(systemImage: "exclamationmark.bubble.fill", tint: .white, background: .orange) {
-            sheet = .report
-        }
-        .disabled(model.location.lastLocation == nil)
     }
 
     /// OSM data is ODbL-licensed and must be credited wherever routes from it are shown.
@@ -215,19 +179,5 @@ struct CircleButton: View {
                 .shadow(color: .black.opacity(0.2), radius: 3, y: 1)
         }
         .buttonStyle(.plain)
-    }
-}
-
-struct HazardIcon: View {
-    let type: HazardType
-    var size: CGFloat = 30
-
-    var body: some View {
-        Image(systemName: type.symbol)
-            .font(.system(size: size * 0.48, weight: .bold))
-            .foregroundStyle(.white)
-            .frame(width: size, height: size)
-            .background(type.color, in: Circle())
-            .overlay(Circle().stroke(.white, lineWidth: max(1.5, size / 20)))
     }
 }
