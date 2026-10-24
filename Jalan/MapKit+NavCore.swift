@@ -28,34 +28,6 @@ extension MKCoordinateRegion {
     )
 }
 
-extension HazardType {
-    var symbol: String {
-        switch self {
-        case .accident: return "car.side.rear.and.collision.and.car.side.front"
-        case .police: return "shield.lefthalf.filled"
-        case .roadblock: return "xmark.octagon.fill"
-        case .flood: return "water.waves"
-        case .pothole: return "exclamationmark.circle.fill"
-        case .jam: return "car.2.fill"
-        case .stalledVehicle: return "car.fill"
-        case .roadWorks: return "hammer.fill"
-        }
-    }
-
-    var color: Color {
-        switch self {
-        case .accident: return .red
-        case .police: return .blue
-        case .roadblock: return .purple
-        case .flood: return .teal
-        case .pothole: return .brown
-        case .jam: return .orange
-        case .stalledVehicle: return .gray
-        case .roadWorks: return Color(red: 0.85, green: 0.6, blue: 0)
-        }
-    }
-}
-
 enum ManeuverSymbol {
     static func name(for maneuver: Maneuver) -> String {
         switch maneuver.type {

@@ -18,7 +18,6 @@ final class AppModel {
     let settings = AppSettings()
     let location = LocationService()
     let search = PlaceSearch()
-    let hazards = HazardStore()
     private let voice = VoiceGuide()
 
     var phase: Phase = .browsing
@@ -29,7 +28,6 @@ final class AppModel {
     var isRerouting = false
     var errorMessage: String?
     var progress: NavigationProgress?
-    var hazardAhead: HazardAhead?
     var camera: MapCameraPosition = .userLocation(fallback: .region(.malaysia))
     /// The camera tracks the car until the user pans the map.
     var isFollowing = true
@@ -121,7 +119,6 @@ final class AppModel {
         engine = NavigationEngine(route: route)
         planner = AnnouncementPlanner(language: settings.language)
         progress = nil
-        hazardAhead = nil
         isFollowing = true
         phase = .navigating
         location.setNavigationMode(true)
@@ -151,7 +148,6 @@ final class AppModel {
         engine = nil
         planner = nil
         progress = nil
-        hazardAhead = nil
         isRerouting = false
         routes = []
         selectedRouteID = nil
@@ -185,11 +181,6 @@ final class AppModel {
         }
 
         if let text = planner.announcement(for: progress, engine: engine, speed: max(fix.speed, 0)) {
-            speak(text)
-        }
-        let ahead = HazardLocator.hazardsAhead(of: progress.distanceAlong, on: engine.line, among: hazards.active())
-        hazardAhead = ahead.first
-        if let nearest = ahead.first, let text = planner.hazardAlert(nearest) {
             speak(text)
         }
         self.planner = planner

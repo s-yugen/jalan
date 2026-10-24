@@ -1,9 +1,9 @@
 # Jalan: a Waze-style navigation app for Malaysia (iOS, Swift)
 
 A working MVP: live GPS on a map, place search, route choices with toll badges, turn-by-turn
-guidance with voice in **English or Bahasa Melayu**, and automatic rerouting. Reporting hazards
-is turned off until there's a backend to share reports between drivers (see below); the code that
-shows and announces hazards on the road ahead is still in place.
+guidance with voice in **English or Bahasa Melayu**, and automatic rerouting. Hazard reports are
+left out of the app until there's a backend to share them between drivers (see below); the hazard
+logic in NavCore is kept for that.
 
 ## Run it
 
@@ -42,7 +42,7 @@ Packages/NavCore/          Pure Swift, no UI, unit-tested
 Jalan/                     SwiftUI app
   AppModel                 State machine: browsing → route preview → navigating
   RouteMapView             The only file that knows about the map SDK (Apple MapKit)
-  LocationService, PlaceSearch, VoiceGuide, HazardStore, AppSettings
+  LocationService, PlaceSearch, VoiceGuide, AppSettings
 ```
 
 Data sources in the MVP, chosen so it runs with no API keys:
@@ -52,7 +52,6 @@ Data sources in the MVP, chosen so it runs with no API keys:
 | Base map and live traffic layer | Apple MapKit | Free |
 | Place search | Apple MapKit (`MKLocalSearch`), plus the OpenStreetMap services below | Free |
 | Routing | OSRM (OpenStreetMap) public demo server, or Mapbox Directions | Free / paid per request |
-| Hazard reports | Stored on the phone | Free |
 
 ## Switching between OpenStreetMap and Mapbox
 
@@ -94,8 +93,10 @@ Every Door apps) and then shows up in these services after their next data updat
   Nominatim server don't allow heavy use, and the Stadia Maps and MapTiler free plans don't allow
   commercial use. Photon can sit on the same VPS as OSRM; enter its URL under Settings → Photon server.
 - **Shared hazard reports.** This is what makes it Waze. Add a backend (for example PostgreSQL +
-  PostGIS, or Supabase), POST reports from `HazardStore.add/confirm/dismiss`, and fetch reports
-  within a few km of the driver every minute (or push them over WebSockets).
+  PostGIS, or Supabase) that drivers POST reports to, and fetch reports within a few km of the
+  driver every minute (or push them over WebSockets). NavCore's `HazardLocator` and
+  `AnnouncementPlanner.hazardAlert` already work out which reports are on the road ahead and what
+  to say; the app needs a report button, map markers and an "ahead" banner again.
 - **Crowd-sourced traffic.** Have phones send anonymised speed samples while navigating; aggregate
   them per road segment on the server and feed the result into routing weights.
 - **PDPA 2010.** Location history is personal data under Malaysia's Personal Data Protection Act:

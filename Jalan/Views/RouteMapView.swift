@@ -6,7 +6,6 @@ import NavCore
 /// (Mapbox Maps or MapLibre) means rewriting this one view.
 struct RouteMapView: View {
     @Environment(AppModel.self) private var model
-    @Binding var selectedHazard: HazardReport?
 
     var body: some View {
         @Bindable var model = model
@@ -26,17 +25,6 @@ struct RouteMapView: View {
                 Marker(destination.name, systemImage: "flag.checkered",
                        coordinate: CLLocationCoordinate2D(destination.coordinate))
                     .tint(.red)
-            }
-
-            ForEach(model.hazards.active()) { report in
-                Annotation(report.type.title(model.settings.language),
-                           coordinate: CLLocationCoordinate2D(report.coordinate)) {
-                    Button { selectedHazard = report } label: {
-                        HazardIcon(type: report.type, size: 32)
-                    }
-                    .buttonStyle(.plain)
-                }
-                .annotationTitles(.hidden)
             }
         }
         // Apple's live traffic layer is free and covers Malaysian cities.
