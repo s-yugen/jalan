@@ -1,9 +1,9 @@
 # Jalan: a Waze-style navigation app for Malaysia (iOS, Swift)
 
 A working MVP: live GPS on a map, place search, route choices with toll badges, turn-by-turn
-guidance with voice in **English or Bahasa Melayu**, automatic rerouting, and hazard reports
-(accident, police, roadblock/SJR, flood, pothole, jam, stalled vehicle, road works) announced
-when they're on the road ahead.
+guidance with voice in **English or Bahasa Melayu**, and automatic rerouting. Reporting hazards
+is turned off until there's a backend to share reports between drivers (see below); the code that
+shows and announces hazards on the road ahead is still in place.
 
 ## Run it
 

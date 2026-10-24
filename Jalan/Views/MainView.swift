@@ -7,7 +7,7 @@ struct MainView: View {
     @State private var selectedHazard: HazardReport?
 
     enum Sheet: String, Identifiable {
-        case search, report, settings
+        case search, settings
         var id: String { rawValue }
     }
 
@@ -27,7 +27,6 @@ struct MainView: View {
         .sheet(item: $sheet) { sheet in
             switch sheet {
             case .search: SearchView()
-            case .report: ReportView().presentationDetents([.medium])
             case .settings: SettingsView()
             }
         }
@@ -99,10 +98,7 @@ struct MainView: View {
             HStack(alignment: .bottom) {
                 CircleButton(systemImage: "gearshape.fill") { sheet = .settings }
                 Spacer()
-                VStack(spacing: 12) {
-                    CircleButton(systemImage: "location.fill") { model.recenter() }
-                    reportButton
-                }
+                CircleButton(systemImage: "location.fill") { model.recenter() }
             }
             attribution
         case .previewing:
@@ -111,22 +107,12 @@ struct MainView: View {
         case .navigating:
             HStack {
                 Spacer()
-                VStack(spacing: 12) {
-                    if !model.isFollowing {
-                        CircleButton(systemImage: "location.north.line.fill") { model.recenter() }
-                    }
-                    reportButton
+                if !model.isFollowing {
+                    CircleButton(systemImage: "location.north.line.fill") { model.recenter() }
                 }
             }
             NavigationFooter()
         }
-    }
-
-    private var reportButton: some View {
-        CircleButton(systemImage: "exclamationmark.bubble.fill", tint: .white, background: .orange) {
-            sheet = .report
-        }
-        .disabled(model.location.lastLocation == nil)
     }
 
     /// OSM data is ODbL-licensed and must be credited wherever routes from it are shown.

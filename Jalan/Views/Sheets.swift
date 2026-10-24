@@ -136,44 +136,6 @@ private struct SearchStatusRow: View {
     }
 }
 
-struct ReportView: View {
-    @Environment(AppModel.self) private var model
-    @Environment(\.dismiss) private var dismiss
-
-    var body: some View {
-        let lang = model.settings.language
-        NavigationStack {
-            ScrollView {
-                LazyVGrid(columns: [GridItem(.adaptive(minimum: 96), spacing: 16)], spacing: 20) {
-                    ForEach(HazardType.allCases, id: \.self) { type in
-                        Button {
-                            model.report(type)
-                            dismiss()
-                        } label: {
-                            VStack(spacing: 8) {
-                                HazardIcon(type: type, size: 64)
-                                Text(type.title(lang))
-                                    .font(.footnote)
-                                    .multilineTextAlignment(.center)
-                                    .foregroundStyle(.primary)
-                            }
-                        }
-                        .buttonStyle(.plain)
-                    }
-                }
-                .padding()
-            }
-            .navigationTitle(lang.pick("Report here", "Laporkan di sini"))
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarItem(placement: .cancellationAction) {
-                    Button(lang.pick("Cancel", "Batal")) { dismiss() }
-                }
-            }
-        }
-    }
-}
-
 struct SettingsView: View {
     @Environment(AppModel.self) private var model
     @Environment(\.dismiss) private var dismiss

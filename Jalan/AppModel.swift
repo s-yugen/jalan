@@ -147,12 +147,6 @@ final class AppModel {
         }
     }
 
-    func report(_ type: HazardType) {
-        guard let last = location.lastLocation else { return }
-        hazards.add(HazardReport(type: type, coordinate: Coordinate(last.coordinate),
-                                 heading: last.course >= 0 ? last.course : nil))
-    }
-
     private func endNavigation() {
         engine = nil
         planner = nil
