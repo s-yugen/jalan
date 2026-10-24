@@ -44,6 +44,12 @@ struct RouteMapView: View {
             cameraAngles.heading = context.camera.heading
             cameraAngles.pitch = context.camera.pitch
         }
+        // MapKit keeps the view it made for your position, so a change between the dot and the car only
+        // shows on a new map. Its camera comes back from `model.camera`, or centres on you if you'd panned.
+        .id(model.settings.positionMarker)
+        .onChange(of: model.settings.positionMarker) {
+            if model.camera.positionedByUser { model.recenter() }
+        }
     }
 }
 
