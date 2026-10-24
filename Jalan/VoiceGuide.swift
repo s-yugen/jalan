@@ -2,6 +2,9 @@ import AVFoundation
 import NavCore
 
 /// Speaks prompts over music or podcasts, ducking them while talking.
+/// Main-actor isolated like `AppModel`, its only user, so it is safely `Sendable`
+/// (which `AVSpeechSynthesizerDelegate` requires from the iOS 26 SDK).
+@MainActor
 final class VoiceGuide: NSObject, AVSpeechSynthesizerDelegate {
     private let synthesizer = AVSpeechSynthesizer()
 
@@ -27,7 +30,8 @@ final class VoiceGuide: NSObject, AVSpeechSynthesizerDelegate {
         synthesizer.stopSpeaking(at: .immediate)
     }
 
-    func speechSynthesizer(_ synthesizer: AVSpeechSynthesizer, didFinish utterance: AVSpeechUtterance) {
+    // AVFoundation doesn't promise which thread this arrives on; it only uses its arguments.
+    nonisolated func speechSynthesizer(_ synthesizer: AVSpeechSynthesizer, didFinish utterance: AVSpeechUtterance) {
         guard !synthesizer.isSpeaking else { return }
         try? AVAudioSession.sharedInstance().setActive(false, options: .notifyOthersOnDeactivation)
     }
