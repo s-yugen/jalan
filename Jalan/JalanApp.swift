@@ -2,7 +2,7 @@ import SwiftUI
 
 @main
 struct JalanApp: App {
-    @State private var model = AppModel()
+    @State private var model = AppModel.shared
 
     var body: some Scene {
         WindowGroup {

@@ -20,6 +20,9 @@
 		0BD74343F3A19AA42FB0E737 /* NavigationViews.swift in Sources */ = {isa = PBXBuildFile; fileRef = 092177AC127A29133838190A /* NavigationViews.swift */; };
 		382BAC7810BC620D7457EC77 /* Sheets.swift in Sources */ = {isa = PBXBuildFile; fileRef = 69E6ECF8D19F555B59DCF26A /* Sheets.swift */; };
 		B3EF778FF66FDCD403AD20C5 /* NavCore in Frameworks */ = {isa = PBXBuildFile; productRef = 6F4EA756C9F0228302D616B7 /* NavCore */; };
+		D3C8D4B52C225C41CC126D62 /* CarPlaySceneDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 38AE273FE8A0DBAB511CA16B /* CarPlaySceneDelegate.swift */; };
+		9625DB76D205938B74F6DE2D /* CarPlayController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 554CFEEE4C1DD998F86FCB6F /* CarPlayController.swift */; };
+		36D3CB58A2BD89F914412D5D /* CarPlayMapViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3ED1DA5A0D3D2B4421F0FFB5 /* CarPlayMapViewController.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -38,6 +41,10 @@
 		84B77558BB3FC08E91AA2FB9 /* RouteMapView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RouteMapView.swift; sourceTree = "<group>"; };
 		092177AC127A29133838190A /* NavigationViews.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NavigationViews.swift; sourceTree = "<group>"; };
 		69E6ECF8D19F555B59DCF26A /* Sheets.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Sheets.swift; sourceTree = "<group>"; };
+		38AE273FE8A0DBAB511CA16B /* CarPlaySceneDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CarPlaySceneDelegate.swift; sourceTree = "<group>"; };
+		554CFEEE4C1DD998F86FCB6F /* CarPlayController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CarPlayController.swift; sourceTree = "<group>"; };
+		3ED1DA5A0D3D2B4421F0FFB5 /* CarPlayMapViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CarPlayMapViewController.swift; sourceTree = "<group>"; };
+		13DE44F3C6570D6C6D8BB8F5 /* Jalan.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = Jalan.entitlements; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -73,7 +80,9 @@
 				9EC40C4994CA8F250394C0D2 /* HazardStore.swift */,
 				42DB5D79C93984AC1F154E17 /* MapKit+NavCore.swift */,
 				20231A2CC8BEE1D7E929FDB7 /* Views */,
+				4CED6D2043D46553C3BA2918 /* CarPlay */,
 				6A34AC6A1C71D5BC0B2390DD /* Info.plist */,
+				13DE44F3C6570D6C6D8BB8F5 /* Jalan.entitlements */,
 			);
 			path = Jalan;
 			sourceTree = "<group>";
@@ -87,6 +96,16 @@
 				69E6ECF8D19F555B59DCF26A /* Sheets.swift */,
 			);
 			path = Views;
+			sourceTree = "<group>";
+		};
+		4CED6D2043D46553C3BA2918 /* CarPlay */ = {
+			isa = PBXGroup;
+			children = (
+				38AE273FE8A0DBAB511CA16B /* CarPlaySceneDelegate.swift */,
+				554CFEEE4C1DD998F86FCB6F /* CarPlayController.swift */,
+				3ED1DA5A0D3D2B4421F0FFB5 /* CarPlayMapViewController.swift */,
+			);
+			path = CarPlay;
 			sourceTree = "<group>";
 		};
 		97C57D362CFF261DC5C2745D /* Products */ = {
@@ -180,6 +199,9 @@
 				19FC756EBA2AED9AAB1A97FF /* RouteMapView.swift in Sources */,
 				0BD74343F3A19AA42FB0E737 /* NavigationViews.swift in Sources */,
 				382BAC7810BC620D7457EC77 /* Sheets.swift in Sources */,
+				D3C8D4B52C225C41CC126D62 /* CarPlaySceneDelegate.swift in Sources */,
+				9625DB76D205938B74F6DE2D /* CarPlayController.swift in Sources */,
+				36D3CB58A2BD89F914412D5D /* CarPlayMapViewController.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -248,6 +270,7 @@
 		51B97D8C8C3C994E5983BF01 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
+				"CODE_SIGN_ENTITLEMENTS[sdk=iphonesimulator*]" = Jalan/Jalan.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_TEAM = "";
@@ -271,6 +294,7 @@
 		5DEFA0508E983E661DF0FDD4 /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
+				"CODE_SIGN_ENTITLEMENTS[sdk=iphonesimulator*]" = Jalan/Jalan.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_TEAM = "";

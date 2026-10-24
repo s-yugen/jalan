@@ -15,6 +15,10 @@ struct Destination: Equatable {
 final class AppModel {
     enum Phase { case browsing, previewing, navigating }
 
+    /// One model for the phone and the CarPlay screen, so a trip started on one shows on both.
+    /// CarPlay can launch the app without the phone's window, so the model can't live in a view.
+    static let shared = AppModel()
+
     let settings = AppSettings()
     let location = LocationService()
     let search = PlaceSearch()
@@ -30,6 +34,8 @@ final class AppModel {
     var errorMessage: String?
     var progress: NavigationProgress?
     var hazardAhead: HazardAhead?
+    /// Whether the last trip ended at the destination rather than being cancelled.
+    private(set) var lastTripArrived = false
     var camera: MapCameraPosition = .userLocation(fallback: .region(.malaysia))
     /// The camera tracks the car until the user pans the map.
     var isFollowing = true
@@ -75,7 +81,7 @@ final class AppModel {
         await preview(Destination(name: place.name, subtitle: place.subtitle, coordinate: place.coordinate))
     }
 
-    private func preview(_ destination: Destination) async {
+    func preview(_ destination: Destination) async {
         self.destination = destination
         routes = []
         phase = .previewing
@@ -134,7 +140,7 @@ final class AppModel {
     }
 
     func stopNavigation() {
-        endNavigation()
+        endNavigation(arrived: false)
         voice.stop()
     }
 
@@ -153,7 +159,8 @@ final class AppModel {
                                  heading: last.course >= 0 ? last.course : nil))
     }
 
-    private func endNavigation() {
+    private func endNavigation(arrived: Bool) {
+        lastTripArrived = arrived
         engine = nil
         planner = nil
         progress = nil
@@ -181,7 +188,7 @@ final class AppModel {
         if progress.hasArrived {
             // The planner normally says "you have arrived" just before; this catches a skipped prompt.
             if let text = planner.announcement(for: progress, engine: engine, speed: 0) { speak(text) }
-            endNavigation()
+            endNavigation(arrived: true)
             return
         }
         if progress.isOffRoute {
@@ -231,10 +238,10 @@ final class AppModel {
 
     /// Heading-up, tilted view that zooms out with speed.
     private func followCamera(_ fix: CLLocation) {
-        let heading = fix.course >= 0 && fix.speed > 2 ? fix.course : (progress?.routeBearing ?? 0)
-        let distance = 500 + min(max(fix.speed, 0), 30) * 30
+        let follow = FollowCamera(fix: fix, routeBearing: progress?.routeBearing)
         withAnimation(.easeInOut(duration: 0.9)) {
-            camera = .camera(MapCamera(centerCoordinate: fix.coordinate, distance: distance, heading: heading, pitch: 50))
+            camera = .camera(MapCamera(centerCoordinate: follow.center, distance: follow.distance,
+                                       heading: follow.heading, pitch: FollowCamera.pitch))
         }
     }
 
