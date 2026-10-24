@@ -3,7 +3,8 @@
 A working MVP: live GPS on a map, place search, route choices with toll badges, turn-by-turn
 guidance with voice in **English or Bahasa Melayu**, automatic rerouting, and hazard reports
 (accident, police, roadblock/SJR, flood, pothole, jam, stalled vehicle, road works) announced
-when they're on the road ahead. It also runs on the car's screen with **Apple CarPlay**.
+when they're on the road ahead. Your position shows as the blue dot or, if you prefer, a **3D car** that
+points the way you're driving (Settings → Map). It also runs on the car's screen with **Apple CarPlay**.
 
 ## Run it
 
@@ -45,6 +46,7 @@ Packages/NavCore/          Pure Swift, no UI, unit-tested
 Jalan/                     SwiftUI app
   AppModel                 State machine: browsing → route preview → navigating, shared by phone and car
   RouteMapView             The phone's map: the only phone file that knows about the map SDK (Apple MapKit)
+  CarModelView             The 3D car that can stand in for the blue dot, on the phone and in CarPlay
   LocationService, PlaceSearch, VoiceGuide, HazardStore, AppSettings
 Jalan/CarPlay/             The car's screen, on the same AppModel
   CarPlayController        Search, route choices, turn-by-turn panel, hazard alerts and reports
