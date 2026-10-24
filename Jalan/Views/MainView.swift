@@ -14,17 +14,22 @@ struct MainView: View {
 
     var body: some View {
         RouteMapView()
-            // Inset the map's safe area rather than floating the panels over it, so MapKit keeps Apple's logo
-            // and Legal link, the scale and the camera clear of them (the logo must stay visible).
-            .safeAreaInset(edge: .top) {
+            // The round buttons float over the map. Sitting inside the bottom inset, they stay above any card.
+            .overlay(alignment: .bottom) {
+                floatingButtons
+                    .padding(.horizontal, 12)
+                    .padding(.bottom, 8)
+            }
+            // Only the full-width panels inset the map's safe area, so MapKit puts Apple's logo and Legal link
+            // (which must stay visible), the scale and the camera just clear of them, and the logo stays in the
+            // bottom-left corner when no card is up.
+            .safeAreaInset(edge: .top, spacing: 0) {
                 VStack(spacing: 10) { topPanel }
                     .padding(.horizontal, 12)
                     .padding(.top, 8)
             }
-            .safeAreaInset(edge: .bottom) {
-                VStack(spacing: 10) { bottomPanel }
-                    .padding(.horizontal, 12)
-                    .padding(.bottom, 8)
+            .safeAreaInset(edge: .bottom, spacing: 0) {
+                bottomCard
             }
             .sheet(item: $sheet) { sheet in
                 switch sheet {
@@ -73,18 +78,27 @@ struct MainView: View {
     }
 
     @ViewBuilder
-    private var bottomPanel: some View {
+    private var floatingButtons: some View {
         switch model.phase {
         case .browsing:
-            HStack(alignment: .bottom) {
-                CircleButton(systemImage: "gearshape.fill") { sheet = .settings }
-                Spacer()
-                CircleButton(systemImage: "location.fill") { model.recenter() }
+            VStack(spacing: 10) {
+                HStack(alignment: .bottom) {
+                    CircleButton(systemImage: "gearshape.fill") { sheet = .settings }
+                    Spacer()
+                    CircleButton(systemImage: "location.fill") { model.recenter() }
+                }
+                // Apple's logo has the left end of this bottom row, so the credit takes the right end. The row
+                // stays when there's no credit to show, so the gear button never covers the logo.
+                credit
+                    .opacity(model.settings.usesMapbox ? 0 : 1)
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.6)
+                    .frame(maxWidth: .infinity, alignment: .trailing)
+                    .padding(.leading, 100)
+                    .allowsHitTesting(false)
             }
-            attribution
         case .previewing:
-            RoutePreviewPanel()
-            attribution
+            EmptyView()
         case .navigating:
             HStack {
                 Spacer()
@@ -92,18 +106,35 @@ struct MainView: View {
                     CircleButton(systemImage: "location.north.line.fill") { model.recenter() }
                 }
             }
+        }
+    }
+
+    @ViewBuilder
+    private var bottomCard: some View {
+        switch model.phase {
+        case .browsing:
+            EmptyView()
+        case .previewing:
+            VStack(spacing: 10) {
+                RoutePreviewPanel()
+                if !model.settings.usesMapbox {
+                    credit
+                }
+            }
+            .padding(.horizontal, 12)
+            .padding(.bottom, 8)
+        case .navigating:
             NavigationFooter()
+                .padding(.horizontal, 12)
+                .padding(.bottom, 8)
         }
     }
 
     /// OSM data is ODbL-licensed and must be credited wherever routes from it are shown.
-    @ViewBuilder
-    private var attribution: some View {
-        if !model.settings.usesMapbox {
-            Text("Routing © OpenStreetMap contributors")
-                .font(.caption2)
-                .foregroundStyle(.secondary)
-        }
+    private var credit: some View {
+        Text("Routing © OpenStreetMap contributors")
+            .font(.caption2)
+            .foregroundStyle(.secondary)
     }
 }
 
