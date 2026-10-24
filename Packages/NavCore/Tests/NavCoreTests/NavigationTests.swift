@@ -29,6 +29,30 @@ final class NavigationTests: XCTestCase {
         XCTAssertFalse(engine.update(location: point(3.15, 101.704)).isOffRoute)
     }
 
+    func testHeadingAcrossTheRouteCountsAsOffRoute() {
+        // On the road under a flyover: close to the route line, but driving north across it.
+        var engine = NavigationEngine(route: TestRoute.make())
+        _ = engine.update(location: point(3.15, 101.702), course: 90, speed: 15)
+        XCTAssertFalse(engine.update(location: point(3.1501, 101.703), course: 0, speed: 15).isOffRoute)
+        XCTAssertFalse(engine.update(location: point(3.1502, 101.703), course: 0, speed: 15).isOffRoute)
+        XCTAssertTrue(engine.update(location: point(3.1503, 101.703), course: 0, speed: 15).isOffRoute)
+        // Driving along the route again clears it.
+        XCTAssertFalse(engine.update(location: point(3.15, 101.704), course: 85, speed: 15).isOffRoute)
+    }
+
+    func testHeadingIgnoredWhenSlowOrTurning() {
+        var engine = NavigationEngine(route: TestRoute.make())
+        _ = engine.update(location: point(3.15, 101.702), course: 90, speed: 15)
+        for _ in 0..<5 {
+            // Crawling in a jam, where GPS heading wanders.
+            XCTAssertFalse(engine.update(location: point(3.15, 101.703), course: 0, speed: 2).isOffRoute)
+        }
+        for _ in 0..<5 {
+            // ~22 m before the left turn, already swinging north.
+            XCTAssertFalse(engine.update(location: point(3.15, 101.7098), course: 0, speed: 8).isOffRoute)
+        }
+    }
+
     func testArrival() {
         var engine = NavigationEngine(route: TestRoute.make())
         XCTAssertFalse(engine.update(location: point(3.159, 101.71)).hasArrived)
