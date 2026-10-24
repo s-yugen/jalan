@@ -7,11 +7,19 @@ import NavCore
 struct RouteMapView: View {
     @Environment(AppModel.self) private var model
     @Binding var selectedHazard: HazardReport?
+    @State private var cameraAngles = MapCameraAngles()
 
     var body: some View {
         @Bindable var model = model
         Map(position: $model.camera) {
-            UserAnnotation()
+            if model.settings.positionMarker == .dot {
+                UserAnnotation()
+            }
+            if model.settings.positionMarker == .car {
+                UserAnnotation { _ in
+                    PositionCar(model: model, camera: cameraAngles)
+                }
+            }
 
             ForEach(model.alternativeRoutes) { route in
                 MapPolyline(coordinates: route.mapCoordinates)
@@ -44,5 +52,29 @@ struct RouteMapView: View {
         .mapControls {
             MapScaleView()
         }
+        .onMapCameraChange(frequency: .continuous) { context in
+            cameraAngles.heading = context.camera.heading
+            cameraAngles.pitch = context.camera.pitch
+        }
+    }
+}
+
+/// The map camera's heading and pitch, for the car. Kept in an object that only the car reads, so a
+/// moving map redraws the car on every frame, not everything on the map.
+@Observable
+private final class MapCameraAngles {
+    var heading: Double = 0
+    var pitch: Double = 0
+}
+
+/// The 3D car in place of the blue dot, MapKit moving it as the GPS position changes.
+private struct PositionCar: View {
+    let model: AppModel
+    let camera: MapCameraAngles
+
+    var body: some View {
+        CarModel(heading: model.carHeading, mapHeading: camera.heading, mapPitch: camera.pitch,
+                 color: model.settings.carColor)
+            .frame(width: CarModelView.side, height: CarModelView.side)
     }
 }

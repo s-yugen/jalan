@@ -58,6 +58,11 @@ final class AppModel {
         routes.filter { $0.id != selectedRoute?.id }
     }
 
+    /// Which way the car on the map faces: the last direction of travel, else along the route, else north.
+    var carHeading: CLLocationDirection {
+        location.course ?? progress?.routeBearing ?? 0
+    }
+
     var upcomingStep: RouteStep? {
         guard let progress, let route = selectedRoute,
               route.steps.indices.contains(progress.upcomingStepIndex) else { return nil }

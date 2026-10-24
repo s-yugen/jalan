@@ -23,6 +23,9 @@ final class CarPlayMapViewController: UIViewController, MKMapViewDelegate {
     private var isShowingRoutes = false
     private var shownRouteIDs: [Route.ID] = []
     private var shownPhase: AppModel.Phase?
+    private var shownMarker: PositionMarker?
+    /// The 3D car, while it stands in for the blue dot.
+    private weak var car: CarModelView?
 
     private static let selectedRouteTitle = "selected"
 
@@ -48,6 +51,7 @@ final class CarPlayMapViewController: UIViewController, MKMapViewDelegate {
         mapView.setRegion(.malaysia, animated: false)
         observeOverlays()
         observeCamera()
+        observeCar()
     }
 
     override func viewSafeAreaInsetsDidChange() {
@@ -185,6 +189,40 @@ final class CarPlayMapViewController: UIViewController, MKMapViewDelegate {
         mapView.setCamera(camera, animated: true)
     }
 
+    /// The blue dot or the car, and which way the car faces.
+    private func observeCar() {
+        guard !isStopped else { return }
+        withObservationTracking {
+            updateCar()
+        } onChange: { [weak self] in
+            Task { @MainActor in self?.observeCar() }
+        }
+    }
+
+    private func updateCar() {
+        let marker = model.settings.positionMarker
+        let oldMarker = shownMarker
+        shownMarker = marker
+        if let oldMarker, marker != oldMarker {
+            // MapKit only asks for the user location's view again when it's shown afresh.
+            let mode = mapView.userTrackingMode
+            car = nil
+            mapView.showsUserLocation = false
+            mapView.showsUserLocation = true
+            mapView.setUserTrackingMode(mode, animated: false)
+        }
+        drawCar()
+    }
+
+    /// Paints the car and turns it the way it's driving, on the map as its camera is now.
+    private func drawCar() {
+        // Read before touching the car, so a change is observed even while there's no car yet.
+        let heading = model.carHeading
+        let color = model.settings.carColor
+        car?.color = color
+        car?.update(heading: heading, mapHeading: mapView.camera.heading, mapPitch: mapView.camera.pitch)
+    }
+
     private func showRoutes() {
         let rect = mapView.overlays.reduce(MKMapRect.null) { $0.union($1.boundingMapRect) }
         guard !rect.isNull else { return }
@@ -209,8 +247,19 @@ final class CarPlayMapViewController: UIViewController, MKMapViewDelegate {
         return renderer
     }
 
+    func mapViewDidChangeVisibleRegion(_ mapView: MKMapView) {
+        // The car keeps pointing the way it drives as the map turns and tilts under it.
+        drawCar()
+    }
+
     func mapView(_ mapView: MKMapView, viewFor annotation: MKAnnotation) -> MKAnnotationView? {
-        if annotation is MKUserLocation { return nil }
+        if annotation is MKUserLocation {
+            guard model.settings.positionMarker == .car else { return nil }
+            let view = CarAnnotationView(annotation: annotation, reuseIdentifier: nil)
+            car = view.car
+            drawCar()
+            return view
+        }
         let view = MKMarkerAnnotationView(annotation: annotation, reuseIdentifier: nil)
         if let hazard = annotation as? HazardAnnotation {
             view.markerTintColor = UIColor(hazard.report.type.color)
@@ -224,6 +273,22 @@ final class CarPlayMapViewController: UIViewController, MKMapViewDelegate {
             view.displayPriority = .required
         }
         return view
+    }
+}
+
+/// The 3D car in place of MapKit's blue dot.
+private final class CarAnnotationView: MKAnnotationView {
+    let car = CarModelView(frame: CGRect(x: 0, y: 0, width: CarModelView.side, height: CarModelView.side))
+
+    override init(annotation: MKAnnotation?, reuseIdentifier: String?) {
+        super.init(annotation: annotation, reuseIdentifier: reuseIdentifier)
+        frame = car.frame
+        addSubview(car)
+        zPriority = .max
+    }
+
+    required init?(coder: NSCoder) {
+        fatalError("init(coder:) is not supported")
     }
 }
 

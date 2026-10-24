@@ -6,6 +6,8 @@ import NavCore
 @Observable
 final class LocationService: NSObject, CLLocationManagerDelegate {
     private(set) var lastLocation: CLLocation?
+    /// Direction of travel, kept while stopped: GPS has no course standing still and a jumpy one at walking pace.
+    private(set) var course: CLLocationDirection?
     private(set) var authorization: CLAuthorizationStatus = .notDetermined
     @ObservationIgnored var onUpdate: (@MainActor (CLLocation) -> Void)?
 
@@ -43,6 +45,7 @@ final class LocationService: NSObject, CLLocationManagerDelegate {
         guard let latest = locations.last, latest.horizontalAccuracy >= 0 else { return }
         MainActor.assumeIsolated {
             lastLocation = latest
+            if latest.course >= 0, latest.speed > 1 { course = latest.course }
             onUpdate?(latest)
         }
     }
