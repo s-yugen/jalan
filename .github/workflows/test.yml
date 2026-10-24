@@ -25,3 +25,22 @@ jobs:
         run: swift --version
       - name: Run tests
         run: swift test
+
+  app:
+    name: Build the iOS app
+    runs-on: macos-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - name: Xcode version
+        run: xcodebuild -version
+      # A Simulator build needs no signing team, so it runs without secrets.
+      - name: Build for the iOS Simulator
+        run: >
+          xcodebuild build
+          -project Jalan.xcodeproj
+          -scheme Jalan
+          -configuration Debug
+          -destination 'generic/platform=iOS Simulator'
+          -quiet
+          CODE_SIGNING_ALLOWED=NO
