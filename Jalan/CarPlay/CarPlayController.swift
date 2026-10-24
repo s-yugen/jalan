@@ -25,7 +25,7 @@ final class CarPlayController: NSObject, CPMapTemplateDelegate, CPSearchTemplate
     private var trip: CPTrip?
     private var session: CPNavigationSession?
     private var shownManeuvers: ManeuverKey?
-    private var pausedFor: PauseReason?
+    private var pausedFor: TripPause?
     private var shownError: String?
 
     private var searchTask: Task<Void, Never>?
@@ -327,9 +327,10 @@ final class CarPlayController: NSObject, CPMapTemplateDelegate, CPSearchTemplate
 
     /// Xcode 26's SDK renamed `CPTripPauseReason` to `CPNavigationSession.PauseReason` and rejects
     /// the old name; older SDKs only know the old one. The app keeps its own so it builds with both.
-    private enum PauseReason { case rerouting, locating }
+    /// It isn't called `PauseReason`: Xcode 26 resolves that name in this class to the old type.
+    private enum TripPause { case rerouting, locating }
 
-    private func pause(_ session: CPNavigationSession, for reason: PauseReason, _ description: String) {
+    private func pause(_ session: CPNavigationSession, for reason: TripPause, _ description: String) {
         guard pausedFor != reason else { return }
         pausedFor = reason
         // Send the turn list again once guidance can resume.
