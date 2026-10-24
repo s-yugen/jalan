@@ -29,6 +29,9 @@ Run the core logic's unit tests (no simulator needed), or open `Packages/NavCore
 cd Packages/NavCore && swift test
 ```
 
+GitHub Actions runs the same tests on macOS for every pull request and every push to `main`
+(`.github/workflows/test.yml`).
+
 ## How it's put together
 
 ```
