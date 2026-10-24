@@ -170,7 +170,7 @@ final class CarPlayController: NSObject, CPMapTemplateDelegate, CPSearchTemplate
         searchTask = Task {
             // Wait for a pause in typing, to stay within the free services' rate limits.
             // A search overtaken by more typing keeps the previous results on screen.
-            try? await Task.sleep(for: .milliseconds(400))
+            try? await Task.sleep(for: PlaceSearch.typingPause)
             if Task.isCancelled {
                 completionHandler(self.searchResults)
                 return
