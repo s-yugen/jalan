@@ -25,7 +25,7 @@ final class CarPlayController: NSObject, CPMapTemplateDelegate, CPSearchTemplate
     private var trip: CPTrip?
     private var session: CPNavigationSession?
     private var shownManeuvers: ManeuverKey?
-    private var pausedFor: CPTripPauseReason?
+    private var pausedFor: PauseReason?
     private var shownHazard: HazardAhead?
     /// Hazards already warned about, or asked about, on this trip. GPS jitter can drop a hazard
     /// from "ahead" for a moment, and it shouldn't pop up again when it comes back.
@@ -393,12 +393,19 @@ final class CarPlayController: NSObject, CPMapTemplateDelegate, CPSearchTemplate
         mapTemplate.updateEstimates(estimates(progress.distanceRemaining, progress.durationRemaining), for: trip)
     }
 
-    private func pause(_ session: CPNavigationSession, for reason: CPTripPauseReason, _ description: String) {
+    /// Xcode 26's SDK renamed `CPTripPauseReason` to `CPNavigationSession.PauseReason` and rejects
+    /// the old name; older SDKs only know the old one. The app keeps its own so it builds with both.
+    private enum PauseReason { case rerouting, locating }
+
+    private func pause(_ session: CPNavigationSession, for reason: PauseReason, _ description: String) {
         guard pausedFor != reason else { return }
         pausedFor = reason
         // Send the turn list again once guidance can resume.
         shownManeuvers = nil
-        session.pauseTrip(for: reason, description: description)
+        switch reason {
+        case .rerouting: session.pauseTrip(for: .rerouting, description: description)
+        case .locating: session.pauseTrip(for: .locating, description: description)
+        }
     }
 
     private func makeManeuver(_ step: RouteStep, _ estimates: CPTravelEstimates) -> CPManeuver {
