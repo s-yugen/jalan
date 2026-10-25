@@ -210,8 +210,12 @@ struct SettingsView: View {
                 }
 
                 Section {
+                    CodeField(lang.pick("Jalan server (Supabase project URL)", "Pelayan Jalan (URL projek Supabase)"),
+                              text: $settings.jalanServer)
+                        .keyboardType(.URL)
                     Toggle("Photon", isOn: $settings.photonEnabled)
-                    if settings.photonEnabled {
+                    // The Jalan server asks its own Photon server.
+                    if settings.photonEnabled && settings.jalanServer.isEmpty {
                         CodeField("Photon server", text: $settings.photonServer)
                             .keyboardType(.URL)
                     }
@@ -225,8 +229,8 @@ struct SettingsView: View {
                     Text(lang.pick("Place search", "Carian tempat"))
                 } footer: {
                     Text(lang.pick(
-                        "Apple Maps is always searched. Photon and Nominatim need no key. openrouteservice, Stadia Maps, LocationIQ and MapTiler are free once you sign up for a key on their websites; the Stadia Maps and MapTiler free plans are for non-commercial use. Each service's results are listed separately.",
-                        "Apple Maps sentiasa dicari. Photon dan Nominatim tidak perlu kunci. openrouteservice, Stadia Maps, LocationIQ dan MapTiler percuma selepas anda daftar untuk kunci di laman web mereka; pelan percuma Stadia Maps dan MapTiler untuk kegunaan bukan komersial. Hasil setiap perkhidmatan disenaraikan berasingan."))
+                        "Apple Maps is always searched. Photon and Nominatim need no key. With a Jalan server, they are asked through it only for places it doesn't have, and what they find is saved there for the next search. openrouteservice, Stadia Maps, LocationIQ and MapTiler are free once you sign up for a key on their websites; the Stadia Maps and MapTiler free plans are for non-commercial use. Each service's results are listed separately.",
+                        "Apple Maps sentiasa dicari. Photon dan Nominatim tidak perlu kunci. Dengan pelayan Jalan, mereka ditanya melaluinya hanya untuk tempat yang belum ada padanya, dan apa yang dijumpai disimpan di sana untuk carian seterusnya. openrouteservice, Stadia Maps, LocationIQ dan MapTiler percuma selepas anda daftar untuk kunci di laman web mereka; pelan percuma Stadia Maps dan MapTiler untuk kegunaan bukan komersial. Hasil setiap perkhidmatan disenaraikan berasingan."))
                 }
             }
             .navigationTitle(lang.pick("Settings", "Tetapan"))

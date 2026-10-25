@@ -1,0 +1,6 @@
+# Supabase CLI settings for Jalan's place search. See "Jalan server (Supabase)" in the README.
+project_id = "jalan"
+
+[functions.places]
+# The app calls the function without a key, like a public Photon server.
+verify_jwt = false

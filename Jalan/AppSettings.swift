@@ -106,6 +106,12 @@ final class AppSettings {
 
     // MARK: Place search
 
+    /// Your Supabase project's URL, like https://abcd.supabase.co. Empty when there's no Jalan server.
+    var jalanServer: String {
+        get { access(keyPath: \.jalanServer); return read("jalanServer", "") }
+        set { withMutation(keyPath: \.jalanServer) { saveKey(newValue, "jalanServer") } }
+    }
+
     var photonEnabled: Bool {
         get { access(keyPath: \.photonEnabled); return read("photonEnabled", true) }
         set { withMutation(keyPath: \.photonEnabled) { defaults.set(newValue, forKey: "photonEnabled") } }
@@ -141,10 +147,13 @@ final class AppSettings {
         set { withMutation(keyPath: \.mapTilerKey) { saveKey(newValue, "mapTilerKey") } }
     }
 
-    /// Services asked while the user types: Photon, and every keyed service that has a key.
+    /// Services asked while the user types: the Jalan server (which asks Photon itself) or else Photon,
+    /// and every keyed service that has a key.
     func makeTypingGeocoders() -> [WebGeocoder] {
         var backends: [GeocoderBackend] = []
-        if photonEnabled {
+        if let jalanServerURL {
+            backends.append(.jalan(projectURL: jalanServerURL, askPhoton: photonEnabled, askNominatim: false))
+        } else if photonEnabled {
             backends.append(URL(string: photonServer).map(GeocoderBackend.photon(baseURL:)) ?? .photonPublic)
         }
         if !openrouteserviceKey.isEmpty { backends.append(.openrouteservice(apiKey: openrouteserviceKey)) }
@@ -154,9 +163,21 @@ final class AppSettings {
         return backends.map { WebGeocoder(backend: $0) }
     }
 
-    /// Nominatim's public server forbids search-as-you-type, so it's only asked on Search.
+    /// Nominatim's public server forbids search-as-you-type, so it's only asked on Search:
+    /// through the Jalan server when there is one, which saves what it finds.
     func makeSubmitGeocoders() -> [WebGeocoder] {
-        nominatimEnabled ? [WebGeocoder(backend: .nominatimPublic)] : []
+        guard nominatimEnabled else { return [] }
+        if let jalanServerURL {
+            let backend = GeocoderBackend.jalan(projectURL: jalanServerURL, askPhoton: photonEnabled, askNominatim: true)
+            return [WebGeocoder(backend: backend)]
+        }
+        return [WebGeocoder(backend: .nominatimPublic)]
+    }
+
+    private var jalanServerURL: URL? {
+        guard let url = URL(string: jalanServer), url.scheme == "https" || url.scheme == "http",
+              url.host?.isEmpty == false else { return nil }
+        return url
     }
 
     var routeOptions: RouteOptions {

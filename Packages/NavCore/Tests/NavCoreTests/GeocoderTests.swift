@@ -20,6 +20,26 @@ final class GeocoderTests: XCTestCase {
         XCTAssertEqual(request.value(forHTTPHeaderField: "User-Agent")?.hasPrefix("Jalan/"), true)
     }
 
+    func testJalanRequest() {
+        let project = URL(string: "https://abcd.supabase.co/")!
+        let typing = WebGeocoder(backend: .jalan(projectURL: project, askPhoton: true, askNominatim: false))
+            .request(for: "mid valley", near: klcc)
+        XCTAssertEqual(typing.url?.absoluteString.hasPrefix("https://abcd.supabase.co/functions/v1/places?"), true)
+        XCTAssertEqual(query(typing)["q"], "mid valley")
+        XCTAssertEqual(query(typing)["limit"], "8")
+        XCTAssertEqual(query(typing)["lat"], "3.15790")
+        XCTAssertEqual(query(typing)["lon"], "101.71230")
+        XCTAssertNil(query(typing)["photon"])
+        XCTAssertNil(query(typing)["submit"])
+        XCTAssertEqual(typing.timeoutInterval, 20)
+
+        let onSearch = WebGeocoder(backend: .jalan(projectURL: project, askPhoton: false, askNominatim: true))
+            .request(for: "kedai ah seng", near: nil)
+        XCTAssertEqual(query(onSearch)["photon"], "0")
+        XCTAssertEqual(query(onSearch)["submit"], "1")
+        XCTAssertNil(query(onSearch)["lat"])
+    }
+
     func testPeliasRequests() {
         let ors = WebGeocoder(backend: .openrouteservice(apiKey: "k1")).request(for: "klcc", near: klcc)
         XCTAssertEqual(ors.url?.host, "api.openrouteservice.org")
@@ -78,6 +98,23 @@ final class GeocoderTests: XCTestCase {
         XCTAssertEqual(places[0].coordinate, Coordinate(latitude: 3.1182, longitude: 101.6772))
         XCTAssertEqual(places[1].name, "12 Jalan Alor")
         XCTAssertEqual(places[1].subtitle, "Kuala Lumpur")
+    }
+
+    func testParseJalan() throws {
+        let json = """
+        {"places":[
+          {"id":"w123","name":"Mid Valley Megamall","subtitle":"Bangsar, Kuala Lumpur","lat":3.1182,"lon":101.6772},
+          {"id":"n456","name":"Kedai Ah Seng","subtitle":"","lat":3.15,"lon":101.7}
+        ]}
+        """
+        let places = try WebGeocoder.parse(Data(json.utf8), from: .jalan)
+        XCTAssertEqual(places, [
+            PlaceResult(id: "jalan:w123", name: "Mid Valley Megamall", subtitle: "Bangsar, Kuala Lumpur",
+                        coordinate: Coordinate(latitude: 3.1182, longitude: 101.6772), source: .jalan),
+            PlaceResult(id: "jalan:n456", name: "Kedai Ah Seng", subtitle: "",
+                        coordinate: Coordinate(latitude: 3.15, longitude: 101.7), source: .jalan),
+        ])
+        XCTAssertThrowsError(try WebGeocoder.parse(Data(#"{"error":"Search failed"}"#.utf8), from: .jalan))
     }
 
     func testParsePelias() throws {

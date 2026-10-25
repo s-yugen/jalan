@@ -37,7 +37,7 @@ GitHub Actions runs the same tests, and builds the app for the iOS Simulator, on
 ```
 Packages/NavCore/          Pure Swift, no UI, unit-tested
   OSRMCompatibleRouter     Fetches and parses routes from OSRM *or* Mapbox (same format)
-  WebGeocoder              Place search on Photon, openrouteservice, Stadia, LocationIQ, MapTiler, Nominatim
+  WebGeocoder              Place search on your Jalan server, Photon, openrouteservice, Stadia, LocationIQ, MapTiler, Nominatim
   NavigationEngine         Snaps GPS to the route, next maneuver, distance/ETA left, off-route detection
   InstructionBuilder       English and Malay instructions ("Di bulatan, ambil susur keluar ke-2…")
   AnnouncementPlanner      When to speak: early (highways), ~250–800 m out, at the turn
@@ -49,6 +49,10 @@ Jalan/                     SwiftUI app
 Jalan/CarPlay/             The car's screen, on the same AppModel
   CarPlayController        Search, route choices, turn-by-turn panel
   CarPlayMapViewController The car's map (UIKit MKMapView, which CarPlay needs), with its own camera
+supabase/                  The Jalan server (optional): place search on your own Supabase project
+  migrations/              The places table, typo-tolerant search, and what Photon and Nominatim answered
+  functions/places/        The app's search: the table first, then Photon or Nominatim, saving what they find
+scripts/import_osm_places.py  Loads Malaysia's OpenStreetMap places into the table
 ```
 
 Data sources in the MVP, chosen so it runs with no API keys:
@@ -56,7 +60,7 @@ Data sources in the MVP, chosen so it runs with no API keys:
 | What | Source | Cost |
 | --- | --- | --- |
 | Base map and live traffic layer | Apple MapKit | Free |
-| Place search | Apple MapKit (`MKLocalSearch`), plus the OpenStreetMap services below | Free |
+| Place search | Apple MapKit (`MKLocalSearch`), plus the OpenStreetMap services below, optionally through your own Jalan server | Free |
 | Routing | OSRM (OpenStreetMap) public demo server, or Mapbox Directions | Free / paid per request |
 
 ## Switching between OpenStreetMap and Mapbox
@@ -100,6 +104,7 @@ can see which service knows a place. Set them up under Settings → Place search
 | Service | Key | Free use | When it's asked |
 | --- | --- | --- | --- |
 | Apple Maps | None | Free | As you type |
+| Jalan server (below) | None | Your Supabase plan | As you type, from 3 letters; again when you press Search |
 | [Photon](https://photon.komoot.io) (Komoot's public server, or your own) | None | Fair use, no guarantee | As you type, from 3 letters |
 | [openrouteservice](https://openrouteservice.org) (Pelias) | Free sign-up | Daily request quota | As you type, from 3 letters |
 | [Stadia Maps](https://stadiamaps.com) (Pelias) | Free sign-up | Non-commercial only | As you type, from 3 letters |
@@ -111,6 +116,57 @@ Everything except Apple searches OpenStreetMap data, so the app shows "© OpenSt
 A missing place can be added to OpenStreetMap by anyone (for example with the StreetComplete or
 Every Door apps) and then shows up in these services after their next data update.
 
+## Jalan server (Supabase)
+
+Your own place search, on a Supabase project. It holds Malaysia's OpenStreetMap places, imported from
+Geofabrik, and answers the app from them first. Only when it has no good match near the driver does
+it ask Photon (and Nominatim, when the user presses Search), then saves what they found, so the next
+search for that place is answered without asking them. It also remembers which searches it already
+sent them, for 30 days, and keeps to Nominatim's one-request-a-second limit for all users together.
+
+With a Jalan server set, the app asks Photon and Nominatim only through it: they appear in the
+results as one section, "Jalan". Apple Maps and the keyed services are asked as before.
+
+**Set it up** (once):
+
+1. Create a project at [supabase.com](https://supabase.com). Choose the Singapore region, the closest to Malaysia.
+2. Install the Supabase CLI (`brew install supabase/tap/supabase`), then from this repository:
+
+   ```sh
+   supabase login
+   supabase link --project-ref <ref>                 # <ref> is the abcd in https://abcd.supabase.co
+   supabase db push                                  # the places table and search functions
+   supabase functions deploy places --no-verify-jwt  # the app's search, open like a public Photon server
+   ```
+
+3. Import the places. Copy the *Session pooler* connection string from **Connect** at the top of
+   the project's dashboard, with your database password in it:
+
+   ```sh
+   pip3 install osmium "psycopg[binary]"
+   curl -O https://download.geofabrik.de/asia/malaysia-singapore-brunei-latest.osm.pbf
+   python3 scripts/import_osm_places.py malaysia-singapore-brunei-latest.osm.pbf "<connection string>"
+   ```
+
+   It imports every named shop, restaurant, mosque, school, petrol station, R&R, toll plaza, housing
+   estate (taman), town and road, with English, Malay, Chinese and Tamil names to search by.
+   Geofabrik's extract also covers Singapore and Brunei, so their places come along.
+4. In the app: Settings → Place search → Jalan server: `https://<ref>.supabase.co`.
+
+**Keep it up to date:** download a newer extract and run the import again, monthly for example. It
+updates what changed and removes what was deleted from OpenStreetMap; what Photon and Nominatim
+found is kept.
+
+**Good to know:**
+
+- **Size.** Check *Database size* in the dashboard after the first import. The free plan allows 500 MB.
+- **Search** tolerates typos and half-typed words, and spells out the usual abbreviations: "jln",
+  "tmn", "kg", "bkt", "sg", "kl", "pj", "jb" and "sri"/"seri" all match.
+- **Your own Photon or Nominatim server:** `supabase secrets set PHOTON_URL=https://photon.example.my`
+  (or `NOMINATIM_URL`). They default to the public servers.
+- **Licence.** The data is OpenStreetMap's, under the ODbL. Keep showing "© OpenStreetMap contributors".
+  Using it in the app is fine; if you ever publish the database itself, it must be under the same licence.
+
 ## Before going to production
 
 - **Run your own OSRM server.** The public demo (`router.project-osrm.org`) forbids production use
@@ -119,7 +175,9 @@ Every Door apps) and then shows up in these services after their next data updat
   A small VPS can handle it.
 - **Run your own Photon server** or move to paid search plans. Komoot's public Photon and the public
   Nominatim server don't allow heavy use, and the Stadia Maps and MapTiler free plans don't allow
-  commercial use. Photon can sit on the same VPS as OSRM; enter its URL under Settings → Photon server.
+  commercial use. A Jalan server (above) sends them far fewer searches, but every new search still
+  reaches them. Photon can sit on the same VPS as OSRM; enter its URL under Settings → Photon server,
+  or as the Jalan server's `PHOTON_URL`.
 - **Shared hazard reports.** This is what makes it Waze. Add a backend (for example PostgreSQL +
   PostGIS, or Supabase) that drivers POST reports to, and fetch reports within a few km of the
   driver every minute (or push them over WebSockets). An earlier on-device version (report types and

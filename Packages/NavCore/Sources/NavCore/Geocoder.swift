@@ -6,13 +6,14 @@ import FoundationNetworking
 /// Where a search result came from. Apple Maps results are made in the app with MapKit;
 /// every other source is a web service queried by `WebGeocoder`.
 public enum PlaceSource: String, CaseIterable, Sendable, Identifiable {
-    case apple, photon, openrouteservice, stadia, locationIQ, mapTiler, nominatim
+    case apple, jalan, photon, openrouteservice, stadia, locationIQ, mapTiler, nominatim
 
     public var id: String { rawValue }
 
     public var title: String {
         switch self {
         case .apple: return "Apple Maps"
+        case .jalan: return "Jalan"
         case .photon: return "Photon"
         case .openrouteservice: return "openrouteservice"
         case .stadia: return "Stadia Maps"
@@ -64,6 +65,9 @@ public enum GeocodingError: Error, Equatable, LocalizedError {
 
 /// The free place-search services. All of them search OpenStreetMap data (some add other open data).
 public enum GeocoderBackend: Sendable, Equatable {
+    /// Your own Jalan server on Supabase (supabase/ in this repository): Malaysia's OpenStreetMap places,
+    /// plus what Photon, and Nominatim when `askNominatim` is set, find for searches it doesn't know.
+    case jalan(projectURL: URL, askPhoton: Bool, askNominatim: Bool)
     /// Komoot's public server is free with no key, on a fair-use basis. Or run your own.
     case photon(baseURL: URL)
     /// Pelias, hosted by HeiGIT. Free API key.
@@ -82,6 +86,7 @@ public enum GeocoderBackend: Sendable, Equatable {
 
     public var source: PlaceSource {
         switch self {
+        case .jalan: return .jalan
         case .photon: return .photon
         case .openrouteservice: return .openrouteservice
         case .stadia: return .stadia
@@ -127,6 +132,15 @@ public struct WebGeocoder: Geocoder {
         var items: [URLQueryItem]
 
         switch backend {
+        case .jalan(let projectURL, let askPhoton, let askNominatim):
+            base = Self.root(projectURL) + "/functions/v1/places"
+            items = [URLQueryItem(name: "q", value: query), limitItem]
+            if let near {
+                items += [URLQueryItem(name: "lat", value: Self.format(near.latitude)),
+                          URLQueryItem(name: "lon", value: Self.format(near.longitude))]
+            }
+            if !askPhoton { items.append(URLQueryItem(name: "photon", value: "0")) }
+            if askNominatim { items.append(URLQueryItem(name: "submit", value: "1")) }
         case .photon(let baseURL):
             base = Self.root(baseURL) + "/api/"
             items = [URLQueryItem(name: "q", value: query), limitItem,
@@ -178,7 +192,8 @@ public struct WebGeocoder: Geocoder {
         var components = URLComponents(string: base)!
         components.queryItems = items
         var request = URLRequest(url: components.url!)
-        request.timeoutInterval = 10
+        // The Jalan server may ask Photon and then Nominatim before it answers.
+        request.timeoutInterval = source == .jalan ? 20 : 10
         request.setValue(Self.userAgent, forHTTPHeaderField: "User-Agent")
         return request
     }
@@ -187,6 +202,11 @@ public struct WebGeocoder: Geocoder {
         let decoder = JSONDecoder()
         do {
             switch source {
+            case .jalan:
+                return try decoder.decode(JalanResponse.self, from: data).places.map { place in
+                    PlaceResult(id: "jalan:\(place.id)", name: place.name, subtitle: place.subtitle,
+                                coordinate: Coordinate(latitude: place.lat, longitude: place.lon), source: .jalan)
+                }
             case .photon:
                 return try decoder.decode(FeatureCollection<PhotonProperties>.self, from: data).features
                     .compactMap(PlaceResult.init(photon:))
@@ -265,6 +285,19 @@ private struct PhotonProperties: Decodable {
         case osmType = "osm_type", osmId = "osm_id"
         case name, housenumber, street, district, locality, city, county, state
     }
+}
+
+/// The Jalan server's answer: places in the order to show them.
+private struct JalanResponse: Decodable {
+    struct Place: Decodable {
+        let id: String
+        let name: String
+        let subtitle: String
+        let lat: Double
+        let lon: Double
+    }
+
+    let places: [Place]
 }
 
 private struct PeliasProperties: Decodable {
