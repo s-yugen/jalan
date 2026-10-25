@@ -24,7 +24,7 @@ final class PlaceSearch: NSObject, MKLocalSearchCompleterDelegate {
     /// Apple's suggestions, resolved to a coordinate only when one is chosen.
     private(set) var appleResults: [MKLocalSearchCompletion] = []
     private(set) var appleStatus: Status = .done
-    /// One section per web service, in the order of `PlaceSource.allCases`.
+    /// One section per web service: those asked while typing, then those asked on Search.
     private(set) var sections: [Section] = []
 
     /// Set by `AppModel`: the services to ask while typing, and those to ask on Search.
@@ -35,6 +35,8 @@ final class PlaceSearch: NSObject, MKLocalSearchCompleterDelegate {
     @ObservationIgnored private var query = ""
     /// The query last sent to Apple and the as-you-type services, so Search doesn't send it twice.
     @ObservationIgnored private var sentQuery: String?
+    /// Services sent this query on Search. A late answer to their typing request is out of date.
+    @ObservationIgnored private var askedOnSubmit: Set<PlaceSource> = []
     @ObservationIgnored private var typingTask: Task<Void, Never>?
     @ObservationIgnored private var submitTask: Task<Void, Never>?
 
@@ -55,6 +57,7 @@ final class PlaceSearch: NSObject, MKLocalSearchCompleterDelegate {
         let query = query.trimmingCharacters(in: .whitespaces)
         guard query != self.query else { return }
         self.query = query
+        askedOnSubmit = []
         typingTask?.cancel()
         submitTask?.cancel()
 
@@ -71,13 +74,15 @@ final class PlaceSearch: NSObject, MKLocalSearchCompleterDelegate {
         let (typing, onSubmit) = geocoders()
         let web = webServices(typing)
         // Keep the previous results on screen until new ones arrive, so the list doesn't flicker.
+        // A service asked both while typing and on Search (the Jalan server) has one section.
         sections = web.map { section(for: $0.source, status: .searching) }
-            + onSubmit.map { section(for: $0.source, status: .waitingForSubmit) }
+            + onSubmit.filter { service in !web.contains { $0.source == service.source } }
+                .map { section(for: $0.source, status: .waitingForSubmit) }
 
         typingTask = Task { [weak self] in
             try? await Task.sleep(for: Self.typingPause)
             guard !Task.isCancelled, let self else { return }
-            await self.send(query, to: web)
+            await self.send(query, to: web, onSubmit: false)
         }
     }
 
@@ -87,24 +92,27 @@ final class PlaceSearch: NSObject, MKLocalSearchCompleterDelegate {
         guard !query.isEmpty else { return }
         let query = query
         let (typing, onSubmit) = geocoders()
-        // Already sent after a pause: only the Search-only services are left to ask.
-        let web = (sentQuery == query ? [] : webServices(typing)) + onSubmit
+        // Already sent after a pause: only the Search-only services are left to ask. A service also
+        // asked on Search (the Jalan server) gets only its Search request.
+        let notYetSent = webServices(typing).filter { service in !onSubmit.contains { $0.source == service.source } }
+        let web = (sentQuery == query ? [] : notYetSent) + onSubmit
         if sentQuery != query { typingTask?.cancel() }
         for geocoder in onSubmit { setStatus(.searching, for: geocoder.source) }
+        askedOnSubmit.formUnion(onSubmit.map(\.source))
         submitTask?.cancel()
-        submitTask = Task { [weak self] in await self?.send(query, to: web) }
+        submitTask = Task { [weak self] in await self?.send(query, to: web, onSubmit: true) }
     }
 
     private func webServices(_ typing: [WebGeocoder]) -> [WebGeocoder] {
         query.count >= Self.minimumWebQueryLength ? typing : []
     }
 
-    private func send(_ query: String, to web: [WebGeocoder]) async {
+    private func send(_ query: String, to web: [WebGeocoder], onSubmit: Bool) async {
         if sentQuery != query {
             sentQuery = query
             completer.queryFragment = query
         }
-        await ask(web, query: query)
+        await ask(web, query: query, onSubmit: onSubmit)
     }
 
     /// Prefer places near the driver; the region is a hint, so far-off matches still appear.
@@ -154,7 +162,7 @@ final class PlaceSearch: NSObject, MKLocalSearchCompleterDelegate {
     }
 
     /// Asks every service at once and fills in each section as its answer arrives.
-    private func ask(_ geocoders: [WebGeocoder], query: String) async {
+    private func ask(_ geocoders: [WebGeocoder], query: String, onSubmit: Bool) async {
         let near = biasCenter.map { Coordinate($0.coordinate) }
         await withTaskGroup(of: (PlaceSource, Result<[PlaceResult], Error>).self) { group in
             for geocoder in geocoders {
@@ -167,7 +175,7 @@ final class PlaceSearch: NSObject, MKLocalSearchCompleterDelegate {
                 }
             }
             for await (source, result) in group {
-                guard !Task.isCancelled, query == self.query,
+                guard !Task.isCancelled, query == self.query, onSubmit || !askedOnSubmit.contains(source),
                       let index = sections.firstIndex(where: { $0.source == source }) else { continue }
                 switch result {
                 case .success(let places):
